@@ -6,6 +6,8 @@
 
 #IncludeRegexTransform: 
 
+/net/malt/t/pgressier/C/reseaux/jalon01/config.h
+
 /net/malt/t/pgressier/C/reseaux/jalon01/server.c
 stdio.h
 -
@@ -21,4 +23,10 @@ sys/socket.h
 -
 netinet/in.h
 -
+errno.h
+-
+string.h
+-
+config.h
+/net/malt/t/pgressier/C/reseaux/jalon01/config.h
 

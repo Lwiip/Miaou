@@ -9,32 +9,86 @@
 
 
 
+
+int do_socket(int domain, int type, int protocol) {
+    int sockfd;
+    int yes = 1;
+    //create the socket
+    sockfd = socket(domain, type, protocol);
+
+    //check for socket validity
+    if( sockfd == -1 ){
+        perror("errreur a la creation de la socket");
+    }
+
+    return sockfd;
+}
+
+struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* hostname, int port){
+    memset(&sock_host, 0, sizeof(sock_host));
+
+    sock_host.sin_family = AF_INET;
+    inet_aton(hostname, & sock_host.sin_addr);
+    sock_host.sin_port = htons(port);
+
+    if (connect(sock, (struct sockaddr *) &sock_host, sizeof(sock_host)) == -1){
+        perror("erreur connect");
+    }
+    return sock_host;
+}
+
+void read_line(char *text){
+    printf("Votre message : ");
+    fgets(text, 2048, stdin);
+}
+
+handle_client_message(int sock, char * text){
+    while(-1 == send(sock, text, 2048, 0)) {
+        perror("erreur lors de l'envoie");
+    }
+
+    int length_r_buff = recv(sock, text, strlen(text) - 1, 0);
+
+    if (0 >= length_r_buff) {
+        perror("erreur lors de la reception");
+    } else {
+        text[length_r_buff] = '\n';
+        fputs(text, stdout);
+    }
+}
+
 int main(int argc,char** argv)
 {
-    
+
     if (argc != 3)
     {
         fprintf(stderr,"usage: RE216_CLIENT hostname port\n");
         return 1;
     }
 
+    struct sockaddr_in sock_host;
+    int sock;
 
-//get address info from the server
-//get_addr_info()
-
-
-//get the socket
-//s = do_socket()
-
-//connect to remote socket
-//do_connect()
+    //get address info from the server
+    char* hostname = argv[1];
+    int port = atoi(argv[2]);
+    // get_addr_info()
 
 
-//get user input
-//readline()
+    //get the socket
+    sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-//send message to the server
-//handle_client_message()
+    //connect to remote socket
+    sock_host = do_connect(sock, sock_host, hostname, port);
+
+
+    //get user input
+    char *text = malloc (sizeof (*text) * 256);
+
+    read_line(text);
+
+    //send message to the server
+    handle_client_message(sock, text);
 
 
     return 0;

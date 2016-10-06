@@ -5,8 +5,10 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <errno.h>
+#include <string.h>
 
-#include <config.h>
+#include "config.h"
 
 void error(const char *msg)
 {
@@ -21,12 +23,12 @@ int do_socket(int domain, int type, int protocol) {
     sockfd = socket(domain, type, protocol);
 
     //check for socket validity
-    if( sock == -1 ){
-        perror("creation de la socket");
+    if( sockfd == -1 ){
+        perror("erreur a la creation de la socket");
     }
 
     // set socket option, to prevent "already in use" issue when rebooting the server right on
-    option = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
+    int option = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
     if ( option == -1)
         error("ERROR setting socket options");
@@ -35,7 +37,6 @@ int do_socket(int domain, int type, int protocol) {
 }
 
 void init_serv_addr(struct sockaddr_in * serv_addr) {
-    int portno;
 
     //clean the serv_add structure
     memset(serv_addr, 0, sizeof(serv_addr));
@@ -47,18 +48,18 @@ void init_serv_addr(struct sockaddr_in * serv_addr) {
     serv_addr->sin_family = AF_INET;
 
     //we bind to any ip form the host
-    serv_addr->sin_addr.s_addr = INADDR_ANY;
+    serv_addr->sin_addr.s_addr = htonl(INADDR_ANY);
 
     //we bind on the tcp port specified
     serv_addr->sin_port = htons(PORT);
 
 }
 
-void do_bind(int sock, struct sockaddr_in * adr){
-    cast_adr = (struct sockaddr *) adr;
+void do_bind(int sock, struct sockaddr_in adr){
 
-    int retour = bind(sock, cast_adr, sizeof(cast_adr))
+    int retour = bind(sock, (struct sockaddr *) &adr, sizeof(adr));
     if( retour == -1 ){
+        printf("%i\n",errno );
         perror("erreur lors du bind");
     }
 }
@@ -70,8 +71,34 @@ void do_listen(int sock){
     }
 }
 
-void do_accept(){
-    
+int do_accept(int sock, struct sockaddr_in * adr){
+    int addrlen=sizeof(adr);
+    int new_sock=accept(sock, (struct sockaddr *) &adr,&addrlen);
+    if(new_sock==-1)
+      printf("Desole, je ne peux pas accepter la session TCP\n");
+      else
+      printf("accept      : OK\n");
+    return new_sock;
+
+}
+
+void do_read(int sockfd, char* buffer){
+    memset(buffer, 0, strlen(buffer)); //on s'assure d'avoir des valuers nulles dans le buff
+    int length_r_buff = recv(sockfd, buffer, strlen(buffer) -1, 0);
+
+    if (length_r_buff < 0) {
+        printf("erreur rien n'a été recu\n");
+    } else {
+        buffer[length_r_buff] = '\0';
+        printf("client : ");
+        fputs(buffer, stdout);
+    }
+}
+
+void do_write(int sockfd, char* text){
+    while(send(sockfd, text, strlen(text), 0) == -1){
+        printf("erreur envoie\n");
+    }
 }
 
 //######################
@@ -89,17 +116,17 @@ int main(int argc, char** argv)
 
     struct sockaddr_in serv_addr;
 
-    sock = do_socket(AF_INET, SOCK_STREAM, IPPROTOCO_TCP)
+    int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     //init the serv_add structure
-    init_serv_addr(PORT, &serv_addr);
+    init_serv_addr(&serv_addr);
 
     //perform the binding
     //we bind on the tcp port specified
-    do_bind(sock, &serv_addr);
+    do_bind(lst_sock, serv_addr);
 
     //specify the socket to be a server socket and listen for at most 20 concurrent client
-    do_listen(sock);
+    do_listen(lst_sock);
 
 
 
@@ -107,18 +134,27 @@ int main(int argc, char** argv)
     {
 
         //accept connection from client
-        //do_accept()
+        int rep_sock=do_accept(lst_sock,&serv_addr);
 
         //read what the client has to say
-        //do_read()
+        char buffer[2048];
+        do_read(rep_sock, buffer);
 
         //we write back to the client
-        //do_write()
+        do_write(rep_sock, buffer);
 
         //clean up client socket
+        int ret = close(rep_sock);
+        if (ret == -1) {
+            printf("erreur lors de la fermeture de rep_sock\n");
+        }
     }
 
     //clean up server socket
+    int ret = close(lst_sock);
+    if (ret == -1) {
+        printf("erreur lors de la fermeture de lst_sock\n");
+    }
 
     return 0;
 }
