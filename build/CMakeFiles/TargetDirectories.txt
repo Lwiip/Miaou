@@ -1,2 +1,0 @@
-/net/malt/t/pgressier/C/reseaux/build/jalon01/CMakeFiles/RE216_JALON01_CLIENT.dir
-/net/malt/t/pgressier/C/reseaux/build/jalon01/CMakeFiles/RE216_JALON01_SERVER.dir
