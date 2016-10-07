@@ -6,3 +6,11 @@ mkdir build
 cd build
 cmake -G"Eclipse CDT4 - Unix Makefiles" -D CMAKE_BUILD_TYPE=Debug ../
 make
+
+function client {
+    ./build/jalon0$1/RE216_JALON0$1_CLIENT 127.0.0.1 3310
+}
+
+function serveur {
+    ./build/jalon0$1/RE216_JALON0$1_SERVER 3310
+}
