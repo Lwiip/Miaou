@@ -77,7 +77,7 @@ int do_accept(int sock, struct sockaddr_in * adr){
     if(new_sock==-1)
       printf("Desole, je ne peux pas accepter la session TCP\n");
       else
-      printf("accept      : OK\n");
+      printf("connection      : OK\n");
     return new_sock;
 
 }
