@@ -113,7 +113,6 @@ int main(int argc, char** argv)
         return 1;
     }
 
-
     struct sockaddr_in serv_addr;
 
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
