@@ -120,6 +120,8 @@ int main(int argc, char** argv)
     }
 
 	int port = atoi(argv[1]);
+    fd_set readfds;
+    char buffer[2048];
 
     struct sockaddr_in serv_addr;
 
@@ -139,16 +141,43 @@ int main(int argc, char** argv)
 
     for (;;)
     {
+        //on vide l'ensemble readfds
+         FD_ZERO(&readfds);
 
-        //accept connection from client
-        int rep_sock=do_accept(lst_sock,&serv_addr);
+        //on remet donc tous les elements dans readfds
+         FD_SET(STDIN_FILENO, &readfds); //
 
-        //read what the client has to say
-        char buffer[2048];
-        do_read(rep_sock, buffer);
+         //on ajoute la socket
+         FD_SET(lst_sock, &readfds);
 
-        //we write back to the client
-        do_write(rep_sock, buffer);
+
+         if(select(lst_sock + 1, &readfds, NULL, NULL, NULL) == -1){
+             perror("erreur dans l'appel a select()");
+             exit(errno);
+         }
+
+         // si la socket d'ecoute est dans readfds, alors tentative de connexion d'un client
+         if(FD_ISSET(STDIN_FILENO, &readfds)){
+                 //accept connection from client
+             int rep_sock=do_accept(lst_sock,&serv_addr);
+             //read what the client has to say
+             do_read(rep_sock, buffer);
+             //we write back to the client
+             do_write(rep_sock, buffer);
+         }
+         
+
+
+
+
+
+
+
+
+
+
+
+
 
         //clean up client socket
         int ret = close(rep_sock);

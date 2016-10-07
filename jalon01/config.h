@@ -3,6 +3,7 @@
 
 #define PORT 3310
 #define ADDRESS 127.0.0.1
+#define MAX_CLIENTS 21
 
 
 #endif /* CONFIG */
