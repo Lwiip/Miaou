@@ -107,12 +107,22 @@ void do_write(int sockfd, char* text){
     }
 }
 
+
+void clear_clients(Client *clients, int taille)
+{
+   int i = 0;
+   for(i = 0; i < taille; i++)
+   {
+      close(clients[i].lst_sock);
+   }
+}
+
 //######################
 //######################    MAIN
 //######################
 
-int main(int argc, char** argv)
-{
+int main(int argc, char** argv){
+
     if (argc != 2)
     {
         fprintf(stderr, "usage: RE216_SERVER port\n");
@@ -120,12 +130,16 @@ int main(int argc, char** argv)
     }
 
 	int port = atoi(argv[1]);
+    int taille=0;
     fd_set readfds;
+    Client clients[MAX_CLIENTS];
     char buffer[2048];
 
     struct sockaddr_in serv_addr;
 
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    int max= lst_sock;
 
     //init the serv_add structure
     init_serv_addr(&serv_addr);
@@ -141,6 +155,7 @@ int main(int argc, char** argv)
 
     for (;;)
     {
+         int i = 0;
         //on vide l'ensemble readfds
          FD_ZERO(&readfds);
 
@@ -150,47 +165,54 @@ int main(int argc, char** argv)
          //on ajoute la socket
          FD_SET(lst_sock, &readfds);
 
+         for(i = 0; i < taille; i++){
+             FD_SET(clients[i].lst_sock, &readfds);
+         }
 
-         if(select(lst_sock + 1, &readfds, NULL, NULL, NULL) == -1){
+
+         if(select(max + 1, &readfds, 0, 0, 0) == -1){
              perror("erreur dans l'appel a select()");
              exit(errno);
          }
 
          // si la socket d'ecoute est dans readfds, alors tentative de connexion d'un client
          if(FD_ISSET(STDIN_FILENO, &readfds)){
-                 //accept connection from client
+             //si il y a pas eu de set
+             break;
+         }
+         else if(FD_ISSET(lst_sock, &readfds)){
              int rep_sock=do_accept(lst_sock,&serv_addr);
              //read what the client has to say
+
+             if (rep_sock>max){
+                 max=rep_sock;
+             }
+             else{
+                 max=max;
+             }
+
+             FD_SET(rep_sock, &readfds);
+
              do_read(rep_sock, buffer);
              //we write back to the client
              do_write(rep_sock, buffer);
+             clients[taille] = rep_sock;
+             taille++;
          }
-         
 
+         else{
 
+             int i = 0;
+             for(i = 0; i < taille; i++){
+           /* a client is talking */
+                if(FD_ISSET(clients[i].lst_sock, &readfds)){
 
-
-
-
-
-
-
-
-
-
-
-        //clean up client socket
-        int ret = close(rep_sock);
-        if (ret == -1) {
-            printf("erreur lors de la fermeture de rep_sock\n");
+                    do_read(clients[i].lst_sock, buffer);
+                    do_write(clients[i].lst_sock, buffer);
+                }
+            }
         }
     }
 
-    //clean up server socket
-    int ret = close(lst_sock);
-    if (ret == -1) {
-        printf("erreur lors de la fermeture de lst_sock\n");
-    }
-
-    return 0;
+    clear_clients(clients, taille);
 }
