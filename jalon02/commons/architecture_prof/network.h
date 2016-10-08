@@ -29,7 +29,7 @@ int do_socket(int family, int type, int protocol);
 /**
  * initialize the server address
  */
-void init_serv_addr(const char* port, struct sockaddr_in *);
+void init_serv_addr(int port, struct sockaddr_in *);
 
 /**
  * bind the file descriptor to the configured server

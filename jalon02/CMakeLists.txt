@@ -7,19 +7,19 @@ source_group("Headers" REGULAR_EXPRESSION ".*\\.h$")
 
 
 include_directories( 
-	commons
+	# commons
 	server
 	client)
 #add here sources that are common between server and client
-SET(SRC_COMMONS
-	commons/network.c
-	commons/contrib.c
-)
+# SET(SRC_COMMONS
+	# commons/network.c
+	# commons/contrib.c
+# )
 
 #add here source files you need to compile and link to the client app
 SET(SRC_CLIENT
 client/client.c
-client/client_lib.c
+# client/client_lib.c
 )
 
 
@@ -28,10 +28,10 @@ add_executable(RE216_JALON02_CLIENT ${SRC_CLIENT} ${SRC_COMMONS})
 
 #add here source files you need to compile and link to the server app
 SET(SRC_SERVER
-server/callbacks.c
+# server/callbacks.c
 server/server_app.c
-server/server_lib.c
-server/user.c
+# server/server_lib.c
+# server/user.c
 )
 
 
