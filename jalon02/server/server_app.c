@@ -100,8 +100,8 @@ int do_accept(int sock, struct sockaddr_in * adr){
 }
 
 void do_read(int sockfd, char* buffer){
-    memset(buffer, 0, strlen(buffer)); //on s'assure d'avoir des valuers nulles dans le buff
-    int length_r_buff = recv(sockfd, buffer, strlen(buffer) -1, 0);
+    memset(buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valuers nulles dans le buff
+    int length_r_buff = recv(sockfd, buffer, BUFFER_SIZE -1, 0);
 
     if (length_r_buff < 0) {
         printf("erreur rien n'a été recu\n");

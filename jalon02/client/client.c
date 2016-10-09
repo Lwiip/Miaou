@@ -93,12 +93,13 @@ int main(int argc,char** argv)
     //get user input
     char *text = malloc (sizeof (*text) * 256);
 
-    //lit l'entrée utilisateur
-    read_line(text);
+	for(;;){
+		//lit l'entrée utilisateur
+		read_line(text);
 
-    //send message to the server
-    handle_client_message(sock, text);
-
+		//send message to the server
+		handle_client_message(sock, text);
+	}
 
     return 0;
 
