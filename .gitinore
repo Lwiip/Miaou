@@ -1,6 +1,6 @@
 .dep/
 .obj/
-*build/
+build
 .cproject
 .project
 */.idea/

@@ -1,4 +1,0 @@
-/mnt/d/Desktop/Paul/Developpement/Miaou/build/jalon01/CMakeFiles/RE216_JALON01_CLIENT.dir
-/mnt/d/Desktop/Paul/Developpement/Miaou/build/jalon01/CMakeFiles/RE216_JALON01_SERVER.dir
-/mnt/d/Desktop/Paul/Developpement/Miaou/build/jalon02/CMakeFiles/RE216_JALON02_CLIENT.dir
-/mnt/d/Desktop/Paul/Developpement/Miaou/build/jalon02/CMakeFiles/RE216_JALON02_SERVER.dir
