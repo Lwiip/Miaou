@@ -144,27 +144,27 @@ int main(int argc, char** argv){
     }
 
 	int port = atoi(argv[1]);
-	
+
     int compteur=0;
-    
+
     Client liste_clients[MAX_CLIENTS];
     char buffer[BUFFER_SIZE];
 
     struct sockaddr_in serv_addr;
 
 	fd_set readfds;
-	
+
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     int max = lst_sock;
 
-	
-	
+
+
 	/*
 	Debut code
 	*/
-	
+
 	/*Initialisation du serveur*/
-	
+
     //init the serv_add structure
     init_serv_addr(port, &serv_addr);
 
@@ -174,7 +174,7 @@ int main(int argc, char** argv){
 
 	//specify the socket to be a server socket and listen for at most 20 concurrent client
     do_listen(lst_sock);
-	
+
 	/*Boucle du serveur*/
     for (;;){
         int i = 0;
@@ -182,7 +182,7 @@ int main(int argc, char** argv){
         FD_ZERO(&readfds);
 
         //on remet donc tous les elements dans readfds
-        FD_SET(STDIN_FILENO, &readfds); //
+        FD_SET(STDIN_FILENO, &readfds);
 
         //on ajoute la socket
         FD_SET(lst_sock, &readfds);
@@ -192,11 +192,12 @@ int main(int argc, char** argv){
         }
 
 
+        printf("test1\n");
         if(-1 == select(max + 1, &readfds, 0, 0, 0)){
            perror("erreur dans l'appel a select()");
            exit(errno);
         }
-
+        printf("test2\n");
         // si la socket d'ecoute est dans readfds, alors tentative de connexion d'un client
         if(FD_ISSET(STDIN_FILENO, &readfds)){
            //si il y a pas eu de set
@@ -208,7 +209,7 @@ int main(int argc, char** argv){
 			int rep_sock = do_accept(lst_sock,&serv_addr); //etrange d'utiliser la serv_addr il faut pas en creer une nouvelle plutot ?
 			printf("\nok\n");
 			printf("\nNouveau client : %i\n", rep_sock);
-			 
+
             if (rep_sock>max){
                 max=rep_sock;
             } else {
@@ -232,7 +233,7 @@ int main(int argc, char** argv){
 				break;
                }
            }
-		}     
+		}
     }
 
     clear_clients(liste_clients, compteur);

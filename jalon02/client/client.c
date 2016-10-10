@@ -41,10 +41,16 @@ struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* host
     return sock_host;
 }
 
-void read_line(char *text){
+int read_line(char *text){
     printf("Votre message : ");
     //recupere la saisie utilisateur (max de BUFFER_SIZE)
     fgets(text, BUFFER_SIZE, stdin);
+
+    if (strlen(text) > 1){
+        return 1;
+    } else {
+        return 0;
+    }
 }
 
 handle_client_message(int sock, char * text){
@@ -95,13 +101,10 @@ int main(int argc,char** argv)
 
 	for(;;){
 		//lit l'entrée utilisateur
-		read_line(text);
-
-		//send message to the server
-		handle_client_message(sock, text);
-	}
-
+		if (read_line(text)){
+    		//send message to the server
+    		handle_client_message(sock, text);
+       }
+    }
     return 0;
-
-
 }
