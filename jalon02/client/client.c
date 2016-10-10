@@ -53,13 +53,14 @@ handle_client_message(int sock, char * text){
         perror("erreur lors de l'envoie");
     }
     //ecoute le message
+    memset(text, 0, BUFFER_SIZE); //On s'assure que text vaut rien
     int length_r_buff = recv(sock, text, strlen(text) - 1, 0);
 
     //gere l'erreur, si pas afficher le message
     if (0 >= length_r_buff) {
         perror("erreur lors de la reception");
     } else {
-        text[length_r_buff] = '\n';
+        text[length_r_buff] = '\0';
         fputs(text, stdout);
     }
 }
