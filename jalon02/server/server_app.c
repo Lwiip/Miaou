@@ -152,7 +152,11 @@ int main(int argc, char** argv){
 
     struct sockaddr_in serv_addr;
 
+<<<<<<< HEAD
 	  fd_set readfds;
+=======
+	fd_set readfds;
+>>>>>>> e1f547607be30b8b1908a35edf862f39f853f6e0
 
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     int max = lst_sock;
@@ -182,7 +186,7 @@ int main(int argc, char** argv){
         FD_ZERO(&readfds);
 
         //on remet donc tous les elements dans readfds
-        FD_SET(STDIN_FILENO, &readfds); //
+        FD_SET(STDIN_FILENO, &readfds);
 
         //on ajoute la socket
         FD_SET(lst_sock, &readfds);
@@ -192,11 +196,12 @@ int main(int argc, char** argv){
         }
 
 
+        printf("test1\n");
         if(-1 == select(max + 1, &readfds, 0, 0, 0)){
            perror("erreur dans l'appel a select()");
            exit(errno);
         }
-
+        printf("test2\n");
         // si la socket d'ecoute est dans readfds, alors tentative de connexion d'un client
         if(FD_ISSET(STDIN_FILENO, &readfds)){
            //si il y a pas eu de set
