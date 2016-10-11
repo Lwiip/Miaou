@@ -103,8 +103,15 @@ int main(int argc,char** argv)
 	for(;;){
 		//lit l'entrée utilisateur
 		if (read_line(text)){
+
+            if (strcmp(text, "/q\n\0") == 0){
+                printf("Deconnection\n");
+                break;
+            }
+
     		//send message to the server
     		handle_client_message(sock, text);
+
        }
     }
     return 0;

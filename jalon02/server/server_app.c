@@ -99,7 +99,7 @@ int do_accept(int sock, struct sockaddr_in * adr){
 
 }
 
-void do_read(int sockfd, char* buffer){
+int do_read(int sockfd, char* buffer){
     memset(buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valuers nulles dans le buff
     int length_r_buff = recv(sockfd, buffer, BUFFER_SIZE -1, 0);
 
@@ -107,9 +107,9 @@ void do_read(int sockfd, char* buffer){
         printf("erreur rien n'a été recu\n");
     } else {
         buffer[length_r_buff] = '\0';
-        printf("client : ");
         fputs(buffer, stdout);
     }
+    return length_r_buff;
 }
 
 void do_write(int sockfd, char* text){
@@ -175,14 +175,14 @@ int main(int argc, char** argv){
 	//specify the socket to be a server socket and listen for at most 20 concurrent client
     do_listen(lst_sock);
 
+    int a = 0;
 	/*Boucle du serveur*/
     for (;;){
         int i = 0;
         //on vide l'ensemble readfds
         FD_ZERO(&readfds);
 
-        //on remet donc tous les elements dans readfds
-        FD_SET(STDIN_FILENO, &readfds);
+
 
         //on ajoute la socket
         FD_SET(lst_sock, &readfds);
@@ -191,23 +191,16 @@ int main(int argc, char** argv){
            FD_SET(liste_clients[i].lst_sock, &readfds);
         }
 
-
-        
         if(-1 == select(max + 1, &readfds, 0, 0, 0)){
            perror("erreur dans l'appel a select()");
            exit(errno);
         }
-        
-        // si la socket d'ecoute est dans readfds, alors tentative de connexion d'un client
-        if(FD_ISSET(STDIN_FILENO, &readfds)){
-           //si il y a pas eu de set
-           break;
-        }
-        else if(FD_ISSET(lst_sock, &readfds)){
+
+
+        if(FD_ISSET(lst_sock, &readfds)){
 		/*ajoute un client a la liste*/
-			printf("ok\n");
 			int rep_sock = do_accept(lst_sock,&serv_addr); //etrange d'utiliser la serv_addr il faut pas en creer une nouvelle plutot ?
-			
+
 			printf("\nNouveau client : %i\n", rep_sock);
 
             if (rep_sock>max){
@@ -227,18 +220,23 @@ int main(int argc, char** argv){
             for(i = 0; i < compteur; i++){
 			/* un client ecrit */
 				if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
-					char buffer[BUFFER_SIZE];
-					do_read(liste_clients[i].lst_sock, buffer);
-					if (strcmp(buffer, "/q\n\0")==0){
-						printf("ok\n");
-						FD_CLR(liste_clients[i].lst_sock, &readfds);
-						close(liste_clients[i].lst_sock);
-					}
-					do_write(liste_clients[i].lst_sock, buffer);
-				break;
+
+					int retour_client = do_read(liste_clients[i].lst_sock, buffer);
+
+					if (strcmp(buffer, "/q\n\0") == 0 || retour_client == 0){
+                        printf("Deconnection du client\n");
+                        close(liste_clients[i].lst_sock);
+                        FD_CLR(liste_clients[i].lst_sock, &readfds);
+                        liste_clients[i].lst_sock = 0;
+
+					} else {
+                        do_write(liste_clients[i].lst_sock, buffer);
+                    }
+                break;
                }
            }
 		}
+        a++;
     }
 
     clear_clients(liste_clients, compteur);
