@@ -128,6 +128,22 @@ void clear_clients(Client *liste_clients, int compteur)
    }
 }
 
+int remove_client(Client * liste_clients, int i, int compteur){
+    /*supprimer le i ème client et decroit le compteur de client*/
+    int k = 0;
+    int w = k;
+
+    for (k; k < compteur -1; k++) { //jusqu'a compteur -1 car on suppr une personne
+        if (k == i) {
+            w++;
+        }
+        liste_clients[k] = liste_clients[w];
+        w++;
+    }
+
+    return --compteur;
+}
+
 //######################
 //######################    MAIN
 //######################
@@ -143,7 +159,7 @@ int main(int argc, char** argv){
         return 1;
     }
 
-	int port = atoi(argv[1]);
+    int port = atoi(argv[1]);
 
     int compteur=0;
 
@@ -187,33 +203,36 @@ int main(int argc, char** argv){
         //on ajoute la socket
         FD_SET(lst_sock, &readfds);
 
+        //parcourt de la liste_clients et ajout des sockets d'écoute dans le fd_set
         for(i = 0; i < compteur; i++){
            FD_SET(liste_clients[i].lst_sock, &readfds);
         }
 
+        //utilisation de select
         if(-1 == select(max + 1, &readfds, 0, 0, 0)){
            perror("erreur dans l'appel a select()");
            exit(errno);
         }
 
-
+        // Si il y a eu un chgt sur la socket principal d'écoute
         if(FD_ISSET(lst_sock, &readfds)){
-		/*ajoute un client a la liste*/
-			int rep_sock = do_accept(lst_sock,&serv_addr); //etrange d'utiliser la serv_addr il faut pas en creer une nouvelle plutot ?
+    		/*ajoute un client a la liste*/
+    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
+    		printf("\nNouveau client : %i\n", rep_sock);
 
-			printf("\nNouveau client : %i\n", rep_sock);
-
+            //Calcul du max
             if (rep_sock>max){
                 max=rep_sock;
             } else {
-				max=max;
+                max=max;
             }
 
+            //ajout de la nouvelle socket client a l'ecoute
             FD_SET(rep_sock, &readfds);
 
-            liste_clients[compteur].lst_sock = rep_sock;
+            liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
 			// liste_clients[compteur].name = ; plus tard
-            compteur++;
+            compteur++; //incremente le nb de client que l'on possède
         } else {
 
             int i = 0;
@@ -221,16 +240,16 @@ int main(int argc, char** argv){
 			/* un client ecrit */
 				if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
 
-					int retour_client = do_read(liste_clients[i].lst_sock, buffer);
+					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
 
-					if (strcmp(buffer, "/q\n\0") == 0 || retour_client == 0){
+					if (strcmp(buffer, "/q\n\0") == 0 || retour_client == 0){ //si deco
                         printf("Deconnection du client\n");
                         close(liste_clients[i].lst_sock);
-                        FD_CLR(liste_clients[i].lst_sock, &readfds);
-                        liste_clients[i].lst_sock = 0;
+                        FD_CLR(liste_clients[i].lst_sock, &readfds); //enlève le client de l'ecoute
+                        compteur = remove_client(liste_clients, i, compteur); //met notre client a zero
 
 					} else {
-                        do_write(liste_clients[i].lst_sock, buffer);
+                        do_write(liste_clients[i].lst_sock, buffer); //repond
                     }
                 break;
                }
@@ -239,5 +258,5 @@ int main(int argc, char** argv){
         a++;
     }
 
-    clear_clients(liste_clients, compteur);
+    clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
 }
