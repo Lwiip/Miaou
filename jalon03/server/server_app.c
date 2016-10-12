@@ -145,38 +145,66 @@ int remove_client(Client * liste_clients, int i, int compteur){
     return --compteur;
 }
 
+void set_buffer(char * buffer, char * message){
+    memset(buffer, 0, BUFFER_SIZE);
+    strcat(buffer, message);
+    strcat(buffer, "\n");
+}
+
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
     char * argument;
     char * copy_buffer;
-    
+
     copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
-    argument = (char *)malloc(BUFFER_SIZE * sizeof(char));
 
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
+
+
     commande = strsep(&copy_buffer, " "); //recupere la commande
+
 
     if (strcmp(commande, "/q") == 0 || retour_client == 0){ //si deco
         printf("Deconnection du client\n");
         close(liste_clients[i].lst_sock);
         FD_CLR(liste_clients[i].lst_sock, readfds); //enlève le client de l'ecoute
         *compteur = remove_client(liste_clients, i, *compteur); //met notre client a zero
-        return 1; //on ne veut pas rentrer en le send
-
-    } else if (strcmp(commande, "/nick") == 0){
-        argument = strsep(&copy_buffer, " ");
-        liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
-        strcpy(liste_clients[i].pseudo, argument);
-
-
-
-        memset(buffer, 0, BUFFER_SIZE);
-        *buffer = strcat("Vous avez été enregistré comme : ", liste_clients[i].pseudo);
-        return 0; //on rentre dans le send
+        return 0; //on ne veut pas rentrer en le send
     }
-    free(copy_buffer);
-    free(argument);
+
+    switch (liste_clients[i].registered) {
+    case 0 :
+        if (strcmp(commande, "/nick") == 0){
+            argument = strsep(&copy_buffer, " ");
+            liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
+            strcpy(liste_clients[i].pseudo, argument);
+            memset(buffer, 0, BUFFER_SIZE);
+            strcat(buffer, "Vous avez été enregistré comme : ");
+            strcat(buffer, liste_clients[i].pseudo);
+            strcat(buffer, "\n");
+
+            liste_clients[i].registered = 1;
+
+        } else {
+            set_buffer(buffer, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
+        }
+
+        free(copy_buffer);
+
+        return 1; //on rentre dans le send
+        break;
+
+    case 1 : //si on est enregistre
+
+        break;
+
+    default :
+        perror("liste_clients.registered different de 0 ou 1 !");
+        return 0;
+        break;
+
+    }
 }
 
 //######################
@@ -266,7 +294,7 @@ int main(int argc, char** argv){
             FD_SET(rep_sock, &readfds);
 
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
-			// liste_clients[compteur].name = ; plus tard
+            liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             compteur++; //incremente le nb de client que l'on possède
         } else {
 
@@ -277,10 +305,13 @@ int main(int argc, char** argv){
 
 					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
 
-                    if (do_commande(&buffer, retour_client, liste_clients, i, &compteur, &readfds)){
-                        do_write(liste_clients[i].lst_sock, buffer); //repond
+                    if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
+
+                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){
+                            do_write(liste_clients[i].lst_sock, buffer); //repond
+                        }
+                        break;
                     }
-                break;
                }
            }
 		}

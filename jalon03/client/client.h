@@ -13,6 +13,7 @@ typedef struct
 
 	int lst_sock;
 	char * pseudo;
+	int registered; //1 pour enregistre, 0 pour non
 }Client;
 
 #endif
