@@ -17,6 +17,7 @@
 #include <netinet/in.h>
 #include <errno.h>
 #include <string.h>
+#include <time.h>
 
 
 // #include "../commons/network.h"
@@ -151,6 +152,21 @@ void set_buffer(char * buffer, char * message){
     strcat(buffer, "\n");
 }
 
+void display_clients_pseudo(Client * liste_clients, int compteur, char * buffer){
+    int i = 0;
+    memset(buffer, 0, BUFFER_SIZE);
+    for (i = 0; i < compteur; i++) {
+        strcat(buffer, "\t - ");
+        strcat(buffer, liste_clients[i].pseudo);
+        strcat(buffer, "\n");
+    }
+
+}
+
+void display_time(time_t connection_date, char * date){
+    strftime(date, sizeof(date), "%x - %X.", localtime(&connection_date));
+}
+
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
     char * argument;
@@ -196,7 +212,18 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         break;
 
     case 1 : //si on est enregistre
+        if (strcmp(commande, "/who") == 0) {
+            display_clients_pseudo(liste_clients, *compteur, buffer);
+        }
 
+        if (strcmp(commande, "/whois") == 0){
+            argument = strsep(&copy_buffer, " ");
+
+        }
+
+        free(copy_buffer);
+
+        return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;
 
     default :
@@ -281,6 +308,16 @@ int main(int argc, char** argv){
         if(FD_ISSET(lst_sock, &readfds)){
     		/*ajoute un client a la liste*/
     		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
+
+            printf("%d.%d.%d.%d\n", (int)(serv_addr.sin_addr.s_addr & 0xFF),
+              (int)((serv_addr.sin_addr.s_addr&0xFF00)>>8),
+              (int)((serv_addr.sin_addr.s_addr&0xFF0000)>>16),
+              (int)((serv_addr.sin_addr.s_addr&0xFF000000)>>24));
+
+
+
+
+
     		printf("\nNouveau client : %i\n", rep_sock);
 
             //Calcul du max
@@ -295,6 +332,7 @@ int main(int argc, char** argv){
 
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
+            liste_clients[compteur].connection_date = time(NULL);
             compteur++; //incremente le nb de client que l'on possède
         } else {
 
@@ -308,6 +346,7 @@ int main(int argc, char** argv){
                     if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
                         if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){
+                            printf("%s\n", buffer);
                             do_write(liste_clients[i].lst_sock, buffer); //repond
                         }
                         break;
