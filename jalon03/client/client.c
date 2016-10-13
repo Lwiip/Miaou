@@ -105,6 +105,9 @@ int main(int argc,char** argv)
 		if (read_line(text)){
 
             if (strcmp(text, "/q\n\0") == 0){
+                while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
+                    perror("erreur lors de l'envoie");
+                }
                 printf("Deconnection\n");
                 break;
             }
