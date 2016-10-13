@@ -117,5 +117,7 @@ int main(int argc,char** argv)
 
        }
     }
+    free(text);
+    close(sock);
     return 0;
 }

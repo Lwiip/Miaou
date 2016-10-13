@@ -16,7 +16,7 @@ typedef struct
 	char * pseudo;
 	int registered; //1 pour enregistre, 0 pour non
 	time_t connection_date;
-	char * ip;
+	char ip[INET_ADDRSTRLEN];
 	int port;
 }Client;
 

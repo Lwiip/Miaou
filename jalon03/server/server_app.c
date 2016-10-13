@@ -164,7 +164,21 @@ void display_clients_pseudo(Client * liste_clients, int compteur, char * buffer)
 }
 
 void display_time(time_t connection_date, char * date){
-    strftime(date, sizeof(date), "%x - %X.", localtime(&connection_date));
+    struct tm temps = * localtime(&connection_date);
+    strftime(date, SIZE_DATE, "%x %X", &temps);
+    puts(date);
+}
+
+int get_indice_user(Client * liste_clients, char * client_pseudo, int compteur){
+    int i = 0;
+    for (i = 0; i < compteur; ++i)
+    {
+        if (strcmp(liste_clients[i].pseudo, client_pseudo) == 0){
+            return i;
+        }
+    }
+    return -1; //on ne l'a pas trouvé
+
 }
 
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
@@ -218,6 +232,31 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
         if (strcmp(commande, "/whois") == 0){
             argument = strsep(&copy_buffer, " ");
+            int indice = get_indice_user(liste_clients, argument, *compteur);
+
+            if (indice != -1){ //si on a trouvé
+                char port[20];
+                snprintf(port, sizeof(port), "%i\n", liste_clients[indice].port);
+
+                char date[SIZE_DATE];
+                display_time(liste_clients[indice].connection_date, date);
+
+                memset(buffer, 0, BUFFER_SIZE);
+
+                strcat(buffer, argument);
+                strcat(buffer, " est connecté depuis ");
+                strcat(buffer, date);
+                strcat(buffer, " a l'ip ");
+                strcat(buffer, liste_clients[indice].ip);
+                strcat(buffer, " et le port ");
+                strcat(buffer, port);
+            } else {
+                memset(buffer, 0, BUFFER_SIZE);
+                strcat(buffer, "Le client ");
+                strcat(buffer, argument);
+                strcat(buffer, " est inconnu(e)\n");
+            }
+            
 
         }
 
@@ -233,6 +272,26 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
     }
 }
+
+void get_ip_port_client(int rep_sock, Client * liste_clients, int compteur){
+
+    struct sockaddr_in sin;
+    socklen_t len = sizeof(sin);
+
+    if (getpeername(rep_sock, (struct sockaddr *)&sin, &len) == -1){
+        perror("getpeername");
+    } else {
+        liste_clients[compteur].port = ntohs(sin.sin_port);
+    }
+
+    struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&sin;
+    struct in_addr ipAddr = pV4Addr->sin_addr;
+    inet_ntop( AF_INET, &ipAddr, liste_clients[compteur].ip, INET_ADDRSTRLEN );
+
+
+}
+
+
 
 //######################
 //######################    MAIN
@@ -307,14 +366,7 @@ int main(int argc, char** argv){
         // Si il y a eu un chgt sur la socket principal d'écoute
         if(FD_ISSET(lst_sock, &readfds)){
     		/*ajoute un client a la liste*/
-    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
-
-            printf("%d.%d.%d.%d\n", (int)(serv_addr.sin_addr.s_addr & 0xFF),
-              (int)((serv_addr.sin_addr.s_addr&0xFF00)>>8),
-              (int)((serv_addr.sin_addr.s_addr&0xFF0000)>>16),
-              (int)((serv_addr.sin_addr.s_addr&0xFF000000)>>24));
-
-
+    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion           
 
 
 
@@ -330,9 +382,14 @@ int main(int argc, char** argv){
             //ajout de la nouvelle socket client a l'ecoute
             FD_SET(rep_sock, &readfds);
 
+
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
+            get_ip_port_client(rep_sock, liste_clients, compteur);
+            printf("%s %i\n", liste_clients[compteur].ip, liste_clients[compteur].port);
+
+
             compteur++; //incremente le nb de client que l'on possède
         } else {
 
