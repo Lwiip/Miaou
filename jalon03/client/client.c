@@ -98,7 +98,7 @@ int main(int argc,char** argv)
 
 
     //get user input
-    char *text = malloc (sizeof (*text) * 256);
+    char *text = malloc (sizeof (*text) * 1024);
 
 	for(;;){
 		//lit l'entrée utilisateur
@@ -117,7 +117,7 @@ int main(int argc,char** argv)
 
        }
     }
-    free(text);
+    // free(text);
     close(sock);
     return 0;
 }

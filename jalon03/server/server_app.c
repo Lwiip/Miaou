@@ -108,7 +108,6 @@ int do_read(int sockfd, char* buffer){
         printf("erreur rien n'a été recu\n");
     } else {
         buffer[length_r_buff] = '\0';
-        fputs(buffer, stdout);
     }
     return length_r_buff;
 }
@@ -165,7 +164,7 @@ void display_clients_pseudo(Client * liste_clients, int compteur, char * buffer)
 
 void display_time(time_t connection_date, char * date){
     struct tm temps = * localtime(&connection_date);
-    strftime(date, SIZE_DATE, "%x %X", &temps);
+    strftime(date, SIZE_DATE, "le %x à %X", &temps);
     puts(date);
 }
 
@@ -181,9 +180,60 @@ int get_indice_user(Client * liste_clients, char * client_pseudo, int compteur){
 
 }
 
+int commande_quit(char * commande, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
+    if (strcmp(commande, "/q") == 0 || retour_client == 0){ //si deco
+        printf("Deconnection du client\n");
+        close(liste_clients[i].lst_sock);
+        FD_CLR(liste_clients[i].lst_sock, readfds); //enlève le client de l'ecoute
+        *compteur = remove_client(liste_clients, i, *compteur); //met notre client a zero
+        return 1; //on a bien fait un /q
+    } else {
+        return 0; //on n'a pas fait un /q
+    }
+}
+
+int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer){
+    char * argument;
+
+    if (strcmp(commande, "/nick") == 0){
+        argument = strsep(copy_buffer, " ");
+        liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
+        strcpy(liste_clients[i].pseudo, argument);
+
+        memset(buffer, 0, BUFFER_SIZE);
+        snprintf(buffer, BUFFER_SIZE, "Vous avez été enregistré comme : %s\n", liste_clients[i].pseudo);
+
+        liste_clients[i].registered = 1;
+
+        return 1; //on a bien fait la commande nick
+
+    } else {
+        set_buffer(buffer, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
+        return 0; //on n'a pas fait la commande nick
+    }
+}
+
+void display_client_info(Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
+    char * argument = strsep(copy_buffer, " ");
+    int indice = get_indice_user(liste_clients, argument, compteur);
+
+    if (indice != -1){ //si on a trouvé
+
+        char date[SIZE_DATE];
+        display_time(liste_clients[indice].connection_date, date);
+
+        memset(buffer, 0, BUFFER_SIZE);
+        snprintf(buffer, BUFFER_SIZE, "%s est connecté depuis %s avec l'ip %s et le port %i\n", argument, date, liste_clients[indice].ip, liste_clients[indice].port);
+
+    } else {
+        memset(buffer, 0, BUFFER_SIZE);
+        snprintf(buffer, BUFFER_SIZE, "Le client %s est inconnu(e)\n", argument);
+
+    }
+}
+
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
-    char * argument;
     char * copy_buffer;
 
     copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
@@ -191,34 +241,18 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
 
-
     commande = strsep(&copy_buffer, " "); //recupere la commande
 
 
-    if (strcmp(commande, "/q") == 0 || retour_client == 0){ //si deco
-        printf("Deconnection du client\n");
-        close(liste_clients[i].lst_sock);
-        FD_CLR(liste_clients[i].lst_sock, readfds); //enlève le client de l'ecoute
-        *compteur = remove_client(liste_clients, i, *compteur); //met notre client a zero
+    if (commande_quit(commande, retour_client, liste_clients, i, compteur, readfds)){ //si deco
         return 0; //on ne veut pas rentrer en le send
     }
 
     switch (liste_clients[i].registered) {
     case 0 :
-        if (strcmp(commande, "/nick") == 0){
-            argument = strsep(&copy_buffer, " ");
-            liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
-            strcpy(liste_clients[i].pseudo, argument);
-            memset(buffer, 0, BUFFER_SIZE);
-            strcat(buffer, "Vous avez été enregistré comme : ");
-            strcat(buffer, liste_clients[i].pseudo);
-            strcat(buffer, "\n");
-
-            liste_clients[i].registered = 1;
-
-        } else {
-            set_buffer(buffer, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
-        }
+        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer)){
+            printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
+        } 
 
         free(copy_buffer);
 
@@ -231,33 +265,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         }
 
         if (strcmp(commande, "/whois") == 0){
-            argument = strsep(&copy_buffer, " ");
-            int indice = get_indice_user(liste_clients, argument, *compteur);
-
-            if (indice != -1){ //si on a trouvé
-                char port[20];
-                snprintf(port, sizeof(port), "%i\n", liste_clients[indice].port);
-
-                char date[SIZE_DATE];
-                display_time(liste_clients[indice].connection_date, date);
-
-                memset(buffer, 0, BUFFER_SIZE);
-
-                strcat(buffer, argument);
-                strcat(buffer, " est connecté depuis ");
-                strcat(buffer, date);
-                strcat(buffer, " a l'ip ");
-                strcat(buffer, liste_clients[indice].ip);
-                strcat(buffer, " et le port ");
-                strcat(buffer, port);
-            } else {
-                memset(buffer, 0, BUFFER_SIZE);
-                strcat(buffer, "Le client ");
-                strcat(buffer, argument);
-                strcat(buffer, " est inconnu(e)\n");
-            }
-            
-
+            display_client_info(liste_clients, *compteur, buffer, &copy_buffer);
         }
 
         free(copy_buffer);
@@ -347,8 +355,6 @@ int main(int argc, char** argv){
         //on vide l'ensemble readfds
         FD_ZERO(&readfds);
 
-
-
         //on ajoute la socket
         FD_SET(lst_sock, &readfds);
 
@@ -366,7 +372,7 @@ int main(int argc, char** argv){
         // Si il y a eu un chgt sur la socket principal d'écoute
         if(FD_ISSET(lst_sock, &readfds)){
     		/*ajoute un client a la liste*/
-    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion           
+    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
 
 
 
@@ -387,6 +393,7 @@ int main(int argc, char** argv){
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
             get_ip_port_client(rep_sock, liste_clients, compteur);
+            
             printf("%s %i\n", liste_clients[compteur].ip, liste_clients[compteur].port);
 
 
@@ -399,11 +406,14 @@ int main(int argc, char** argv){
 				if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
 
 					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
+                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
 
                     if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
+                        printf("Entrée : %s", buffer);
+
                         if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){
-                            printf("%s\n", buffer);
+                            printf("Sortie : %s\n", buffer);
                             do_write(liste_clients[i].lst_sock, buffer); //repond
                         }
                         break;
