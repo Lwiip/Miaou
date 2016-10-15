@@ -1,3 +1,2 @@
 - Fermer plus proprement les sockets car on a tjr le port qui s'increment :/
 - nettoyer le code
-
