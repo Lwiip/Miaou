@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 2.8.3)
 
-project(RE216_JALON03)
+project(RE216_JALON04)
 
 
 source_group("Headers" REGULAR_EXPRESSION ".*\\.h$")
@@ -23,7 +23,7 @@ client/client.c
 )
 
 
-add_executable(RE216_JALON03_CLIENT ${SRC_CLIENT} ${SRC_COMMONS})
+add_executable(RE216_JALON04_CLIENT ${SRC_CLIENT} ${SRC_COMMONS})
 
 
 #add here source files you need to compile and link to the server app
@@ -35,4 +35,4 @@ server/server_app.c
 )
 
 
-add_executable(RE216_JALON03_SERVER  ${SRC_SERVER} ${SRC_COMMONS})
+add_executable(RE216_JALON04_SERVER  ${SRC_SERVER} ${SRC_COMMONS})

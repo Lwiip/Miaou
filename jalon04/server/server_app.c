@@ -28,6 +28,24 @@ int server_socket_fd;
 #include "../commons/config.h"
 #include "../client/client.h"
 
+typedef enum {
+    no_one,
+    everyone,
+    user,
+    channel,
+}Send_to;
+
+typedef struct st_subscribers{
+    Client subscriber;
+    struct st_subscribers * next;
+}Subscribers;
+
+typedef struct{
+    char * name;
+    Subscribers list_subscribers;
+}Channel;
+
+
 void error(const char *msg)
 {
     perror(msg);
@@ -223,7 +241,8 @@ void display_client_info(Client * liste_clients, int compteur, char * buffer, ch
         display_time(liste_clients[indice].connection_date, date);
 
         memset(buffer, 0, BUFFER_SIZE);
-        snprintf(buffer, BUFFER_SIZE, "%s est connecté depuis %s avec l'ip %s et le port %i\n", argument, date, liste_clients[indice].ip, liste_clients[indice].port);
+        snprintf(buffer, BUFFER_SIZE, "%s est connecté depuis %s avec l'ip %s et le port %i\n"
+            , argument, date, liste_clients[indice].ip, liste_clients[indice].port);
 
     } else {
         memset(buffer, 0, BUFFER_SIZE);
@@ -232,11 +251,18 @@ void display_client_info(Client * liste_clients, int compteur, char * buffer, ch
     }
 }
 
+void display_help(char * buffer){
+    snprintf(buffer, BUFFER_SIZE, "Commandes diponibles :\n"
+        "\t- /nick [pseudo] `\t> ajoute ou modifie votre pseudo\n"
+        "\t- /q \t\t> ferme le chat\n"
+        "\t- /who \t\t> affiche les utilisateurs en ligne\n"
+        "\t- /whois [pseudo] \t> affiche les informations relatives au joueur\n");
+}
+
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
-    char * copy_buffer;
-
-    copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    char local_copy_buffer[BUFFER_SIZE];
+    char * copy_buffer = local_copy_buffer;
 
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
@@ -254,7 +280,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         } 
 
-        free(copy_buffer);
+        // free(copy_buffer);
 
         return 1; //on rentre dans le send
         break;
@@ -262,13 +288,17 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
     case 1 : //si on est enregistre
         if (strcmp(commande, "/who") == 0) {
             display_clients_pseudo(liste_clients, *compteur, buffer);
-        }
-
-        if (strcmp(commande, "/whois") == 0){
+        } else if (strcmp(commande, "/whois") == 0){
             display_client_info(liste_clients, *compteur, buffer, &copy_buffer);
-        }
+        } else if (strcmp(commande, "/help") == 0){
+            memset(buffer, 0, BUFFER_SIZE);
+            strcat(buffer, "tst\n");
+            display_help(buffer);
+        } else {
 
-        free(copy_buffer);
+        }
+        // memset(copy_buffer, 0, BUFFER_SIZE);
+        // free(copy_buffer);
 
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;

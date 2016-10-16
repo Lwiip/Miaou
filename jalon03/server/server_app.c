@@ -234,12 +234,12 @@ void display_client_info(Client * liste_clients, int compteur, char * buffer, ch
 
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
-    char * copy_buffer;
-
-    copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    char local_copy_buffer[BUFFER_SIZE];
+    char * copy_buffer = local_copy_buffer;
 
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
+
 
     commande = strsep(&copy_buffer, " "); //recupere la commande
 
