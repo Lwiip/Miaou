@@ -18,6 +18,9 @@ typedef struct
 	time_t connection_date;
 	char ip[INET_ADDRSTRLEN];
 	int port;
+
+	char * user_channel; //-1 si dans aucune channel
+
 }Client;
 
 #endif

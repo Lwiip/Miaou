@@ -35,6 +35,13 @@ typedef enum {
     channel,
 }Send_to;
 
+typedef struct{
+    Client sender;
+    char * buffer;
+    Send_to destination;
+    char * channel_dest_name;
+}Message;
+
 typedef struct st_subscribers{
     Client subscriber;
     struct st_subscribers * next;
@@ -50,6 +57,13 @@ void error(const char *msg)
 {
     perror(msg);
     exit(1);
+}
+
+void init_message(Message * message){
+    message->buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+}
+void free_message(Message * message){
+    free(message->buffer);
 }
 
 int do_socket(int domain, int type, int protocol) {
@@ -118,14 +132,14 @@ int do_accept(int sock, struct sockaddr_in * adr){
 
 }
 
-int do_read(int sockfd, char* buffer){
-    memset(buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valuers nulles dans le buff
-    int length_r_buff = recv(sockfd, buffer, BUFFER_SIZE -1, 0);
+int do_read(Message * message){
+    memset(message->buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valuers nulles dans le buff
+    int length_r_buff = recv((message->sender).lst_sock, message->buffer, BUFFER_SIZE -1, 0);
 
     if (length_r_buff < 0) {
         printf("erreur rien n'a été recu\n");
     } else {
-        buffer[length_r_buff] = '\0';
+        message->buffer[length_r_buff] = '\0';
     }
     return length_r_buff;
 }
@@ -252,19 +266,19 @@ void display_client_info(Client * liste_clients, int compteur, char * buffer, ch
 }
 
 void display_help(char * buffer){
-    snprintf(buffer, BUFFER_SIZE, "Commandes diponibles :\n"
-        "\t- /nick [pseudo] `\t> ajoute ou modifie votre pseudo\n"
-        "\t- /q \t\t> ferme le chat\n"
-        "\t- /who \t\t> affiche les utilisateurs en ligne\n"
+    strcat(buffer, "Commandes diponibles :\n"
+        "\t- /nick [pseudo] \t> ajoute ou modifie votre pseudo\n"
+        "\t- /q \t\t\t> ferme le chat\n"
+        "\t- /who \t\t\t> affiche les utilisateurs en ligne\n"
         "\t- /whois [pseudo] \t> affiche les informations relatives au joueur\n");
 }
 
-int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
-    char * commande = buffer;
+int do_commande(Message * message, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
+    char * commande = message->buffer;
     char local_copy_buffer[BUFFER_SIZE];
     char * copy_buffer = local_copy_buffer;
 
-    strcpy(copy_buffer,buffer);
+    strcpy(copy_buffer,message->buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
 
     commande = strsep(&copy_buffer, " "); //recupere la commande
@@ -276,7 +290,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
     switch (liste_clients[i].registered) {
     case 0 :
-        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer)){
+        if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
@@ -285,15 +299,25 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
     case 1 : //si on est enregistre
         if (strcmp(commande, "/who") == 0) {
-            display_clients_pseudo(liste_clients, *compteur, buffer);
+            display_clients_pseudo(liste_clients, *compteur, message->buffer);
         } else if (strcmp(commande, "/whois") == 0){
-            display_client_info(liste_clients, *compteur, buffer, &copy_buffer);
+            display_client_info(liste_clients, *compteur, message->buffer, &copy_buffer);
         } else if (strcmp(commande, "/help") == 0){
-            memset(buffer, 0, BUFFER_SIZE);
-            strcat(buffer, "tst\n");
-            display_help(buffer);
-        } else {
-
+            memset(message->buffer, 0, BUFFER_SIZE);
+            display_help(message->buffer);
+        } else if (strcmp(commande, "/a") == 0){ //message to all
+            message->destination = everyone;
+        } else { //aucune commande
+            if ((message->sender).user_channel == NULL){ //si on n'est PAS dans une channel 
+                //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
+                memset(message->buffer, 0, BUFFER_SIZE);
+                snprintf(message->buffer, BUFFER_SIZE, "Votre message ne contenait pas de commande, cela n'est possible "
+                "que si vous etes dans une channel, or ce n'est pas le cas.\n");
+                display_help(message->buffer);
+            } else {
+                message->destination = channel;
+                message->channel_dest_name = (message->sender).user_channel;
+            }
         }
 
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
@@ -347,7 +371,8 @@ int main(int argc, char** argv){
     int compteur=0;
 
     Client liste_clients[MAX_CLIENTS];
-    char buffer[BUFFER_SIZE];
+    Message message;
+    init_message(&message);
 
     struct sockaddr_in serv_addr;
 
@@ -418,6 +443,7 @@ int main(int argc, char** argv){
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
+            liste_clients[compteur].user_channel = NULL;
             get_ip_port_client(rep_sock, liste_clients, compteur);
             
             printf("%s %i\n", liste_clients[compteur].ip, liste_clients[compteur].port);
@@ -430,17 +456,17 @@ int main(int argc, char** argv){
             for(i = 0; i < compteur; i++){
 			/* un client ecrit */
 				if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
-
-					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
+                    message.sender = liste_clients[i];
+					int retour_client = do_read(&message); //ecoute ce que le client envoie
                     commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
 
-                    if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
+                    if (strlen(message.buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
-                        printf("Entrée : %s", buffer);
+                        printf("Entrée : %s", message.buffer);
 
-                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){
-                            printf("Sortie : %s\n", buffer);
-                            do_write(liste_clients[i].lst_sock, buffer); //repond
+                        if (do_commande(&message, retour_client, liste_clients, i, &compteur, &readfds)){
+                            printf("Sortie : %s\n", message.buffer);
+                            do_write(liste_clients[i].lst_sock, message.buffer); //repond
                         }
                         break;
                     }
