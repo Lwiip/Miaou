@@ -252,9 +252,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
     case 0 :
         if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
-        } 
-
-        free(copy_buffer);
+        }
 
         return 1; //on rentre dans le send
         break;
@@ -267,8 +265,6 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         if (strcmp(commande, "/whois") == 0){
             display_client_info(liste_clients, *compteur, buffer, &copy_buffer);
         }
-
-        free(copy_buffer);
 
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;
