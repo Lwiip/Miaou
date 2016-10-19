@@ -1,0 +1,42 @@
+#IncludeRegexLine: ^[ 	]*#[ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/client/client.c
+stdlib.h
+-
+unistd.h
+-
+stdio.h
+-
+string.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+netdb.h
+-
+client.h
+/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/client/client.h
+
+/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/client/client.h
+stdlib.h
+-
+stdio.h
+-
+sys/types.h
+-
+sys/socket.h
+-
+time.h
+-
+../commons/config.h
+/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/commons/config.h
+
+/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/commons/config.h
+

@@ -104,7 +104,7 @@ int main(int argc,char** argv)
 		//lit l'entrée utilisateur
 		if (read_line(text)){
 
-            if (strcmp(text, "/q\n\0") == 0){
+            if (strcmp(text, "/quit\n\0") == 0){
                 while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
                     perror("erreur lors de l'envoie");
                 }
