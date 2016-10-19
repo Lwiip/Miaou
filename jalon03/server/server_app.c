@@ -195,8 +195,8 @@ int commande_quit(char * commande, int retour_client, Client * liste_clients, in
 int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer){
     char * argument;
 
-    if ((strlen(buffer) -1)==strlen(commande)){  //éviter le seg fault si juste /nick
-        snprintf(buffer, BUFFER_SIZE, "Entrez un nom valide !\n");
+    if ((strlen(buffer) -1)==strlen(commande) ){  //éviter le seg fault si juste /nick
+        set_buffer(buffer, "Entrez un pseudo valide avec /nick pseudo!\n");
         return 0;
     }
 
@@ -218,7 +218,14 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
     }
 }
 
-void display_client_info(Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
+
+int display_client_info(char * commande, Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
+
+    if ((strlen(buffer) -1)==strlen(commande) ){  //éviter le seg fault si juste /whois
+        set_buffer(buffer, "commande de la forme /whois pseudo!\n");
+        return 0;
+    }
+
     char * argument = strsep(copy_buffer, " ");
     int indice = get_indice_user(liste_clients, argument, compteur);
 
@@ -229,11 +236,11 @@ void display_client_info(Client * liste_clients, int compteur, char * buffer, ch
 
         memset(buffer, 0, BUFFER_SIZE);
         snprintf(buffer, BUFFER_SIZE, "%s est connecté depuis %s avec l'ip %s et le port %i\n", argument, date, liste_clients[indice].ip, liste_clients[indice].port);
-
+        return 1;
     } else {
         memset(buffer, 0, BUFFER_SIZE);
         snprintf(buffer, BUFFER_SIZE, "Le client %s est inconnu(e)\n", argument);
-
+        return 0;
     }
 }
 
@@ -250,7 +257,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
 
     if (commande_quit(commande, retour_client, liste_clients, i, compteur, readfds)){ //si deco
-        return 10; //on ne veut pas rentrer en le send
+        return 10; //on ne veut pas rentrer dans le send
     }
 
     switch (liste_clients[i].registered) {
@@ -270,7 +277,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         }
 
         if (strcmp(commande, "/whois") == 0){
-            display_client_info(liste_clients, *compteur, buffer, &copy_buffer);
+            display_client_info(commande,liste_clients, *compteur, buffer, &copy_buffer);
         }
 
         free(copy_buffer);
