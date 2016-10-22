@@ -1,2 +1,0 @@
-/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/CMakeFiles/RE216_JALON03_CLIENT.dir
-/net/malt/t/lgallotlava/personnel/reseau/Miaou/jalon03/CMakeFiles/RE216_JALON03_SERVER.dir

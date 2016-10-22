@@ -1,1 +1,0 @@
-/usr/bin/cc      CMakeFiles/RE216_JALON03_SERVER.dir/server/server_app.c.o  -o RE216_JALON03_SERVER -rdynamic 
