@@ -12,6 +12,18 @@
 
 
 
+int kbhit()
+{
+    struct timeval tv;
+    fd_set fds;
+    tv.tv_sec = 0;
+    tv.tv_usec = 0;
+    FD_ZERO(&fds);
+    FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+    select(STDIN_FILENO+1, &fds, NULL, NULL, &tv);
+    return FD_ISSET(STDIN_FILENO, &fds);
+}
+
 int do_socket(int domain, int type, int protocol) {
     int sockfd;
 
@@ -42,9 +54,11 @@ struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* host
 }
 
 int read_line(char *text){
-    printf("Votre message : ");
     //recupere la saisie utilisateur (max de BUFFER_SIZE)
+
+    printf("Votre message : ");
     fgets(text, BUFFER_SIZE, stdin);
+
 
     if (strlen(text) > 1){
         return 1;
@@ -53,12 +67,13 @@ int read_line(char *text){
     }
 }
 
-handle_client_message(int sock, char * text){
-    //envoie des messages et gere l'erreur
+void do_write(int sock, char * text){ //redefinition de celle dans serveur, a mettre au propre plus tard
     while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
         perror("erreur lors de l'envoie");
     }
-    //ecoute le message
+}
+
+void do_read(int sock, char * text){
     memset(text, 0, BUFFER_SIZE); //On s'assure que text vaut rien
     int length_r_buff = recv(sock, text, strlen(text) - 1, 0);
 
@@ -69,6 +84,13 @@ handle_client_message(int sock, char * text){
         text[length_r_buff] = '\0';
         fputs(text, stdout);
     }
+}
+
+handle_client_message(int sock, char * text){
+    //envoie des messages et gere l'erreur
+    do_write(sock, text);
+    //ecoute le message
+    do_read(sock, text);
 }
 
 int main(int argc,char** argv)
@@ -82,6 +104,8 @@ int main(int argc,char** argv)
 
     struct sockaddr_in sock_host;
     int sock;
+
+    fd_set fds;
 
     //get address info from the server
     char* hostname = argv[1];
@@ -100,9 +124,24 @@ int main(int argc,char** argv)
     //get user input
     char *text = malloc (sizeof (*text) * 1024);
 
+    // nonblock(NB_ENABLE);
+
 	for(;;){
-		//lit l'entrée utilisateur
-		if (read_line(text)){
+
+
+        
+        FD_ZERO(&fds);
+        FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+        FD_SET(sock, &fds);
+
+        select(sock+1, &fds, NULL, NULL, 0);
+
+        if (FD_ISSET(STDIN_FILENO, &fds)){ //si la modification est faite sur stdin
+            // read_line(text);
+            memset(text, 0, BUFFER_SIZE);
+            // fgets(text, BUFFER_SIZE, stdin);
+            read(STDIN_FILENO, text, BUFFER_SIZE);
+            
 
             if (strcmp(text, "/q\n\0") == 0){
                 while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
@@ -112,12 +151,28 @@ int main(int argc,char** argv)
                 break;
             }
 
-    		//send message to the server
-    		handle_client_message(sock, text);
+            // send message to the server
+            // handle_client_message(sock, text);
+            do_write(sock, text);
+        }
 
-       }
+
+        // FD_ZERO(&fds);
+        // FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
+        // FD_SET(sock, &fds);
+        // printf(">\n");
+        // select(sock+1, &fds, NULL, NULL, 0);
+        // printf(">>\n");
+
+
+        if (FD_ISSET(sock, &fds)){ //si la modification est faite sur l'ecoute
+            do_read(sock, text);
+            
+        }
+        
     }
     // free(text);
     close(sock);
+    // nonblock(NB_DISABLE);
     return 0;
 }

@@ -29,7 +29,7 @@ int server_socket_fd;
 #include "../client/client.h"
 
 typedef enum {
-    no_one,
+    no_one, //so commande or other stuff : send back
     everyone,
     user,
     channel,
@@ -148,6 +148,28 @@ void do_write(int sockfd, char* text){
     while(send(sockfd, text, strlen(text), 0) == -1){
         printf("erreur envoie\n");
     }
+}
+
+void do_send(Message message, Client * liste_clients, int compteur){
+
+    switch (message.destination){
+        case no_one: ;
+            do_write((message.sender).lst_sock, message.buffer);
+            break;
+
+        case 1 : ;//everyone
+            int i = 0;
+            for (i = 0; i < compteur; ++i){
+                do_write(liste_clients[i].lst_sock, message.buffer);
+            }
+            break;
+
+        default:
+            perror("Aucune destination pour ce message");
+            break;
+}
+
+    
 }
 
 
@@ -292,6 +314,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
     case 0 :
         if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
+            message->destination = everyone;
         }
 
         return 1; //on rentre dans le send
@@ -300,12 +323,16 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
     case 1 : //si on est enregistre
         if (strcmp(commande, "/who") == 0) {
             display_clients_pseudo(liste_clients, *compteur, message->buffer);
+            message->destination = no_one;
         } else if (strcmp(commande, "/whois") == 0){
             display_client_info(liste_clients, *compteur, message->buffer, &copy_buffer);
+            message->destination = no_one;
         } else if (strcmp(commande, "/help") == 0){
             memset(message->buffer, 0, BUFFER_SIZE);
             display_help(message->buffer);
+            message->destination = no_one;
         } else if (strcmp(commande, "/a") == 0){ //message to all
+            snprintf(message->buffer, BUFFER_SIZE, "%s\n", copy_buffer); //supprime la commande du message a transmettre
             message->destination = everyone;
         } else { //aucune commande
             if ((message->sender).user_channel == NULL){ //si on n'est PAS dans une channel 
@@ -456,6 +483,7 @@ int main(int argc, char** argv){
             for(i = 0; i < compteur; i++){
 			/* un client ecrit */
 				if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
+                    message.destination = no_one; //par defaut on envoie a personne
                     message.sender = liste_clients[i];
 					int retour_client = do_read(&message); //ecoute ce que le client envoie
                     commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
@@ -466,7 +494,7 @@ int main(int argc, char** argv){
 
                         if (do_commande(&message, retour_client, liste_clients, i, &compteur, &readfds)){
                             printf("Sortie : %s\n", message.buffer);
-                            do_write(liste_clients[i].lst_sock, message.buffer); //repond
+                            do_send(message, liste_clients, compteur); //repond
                         }
                         break;
                     }
