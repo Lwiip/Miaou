@@ -160,7 +160,9 @@ void do_send(Message message, Client * liste_clients, int compteur){
         case 1 : ;//everyone
             int i = 0;
             for (i = 0; i < compteur; ++i){
-                do_write(liste_clients[i].lst_sock, message.buffer);
+                if ((message.sender).lst_sock != liste_clients[i].lst_sock){ //on n'envoie pas au sender
+                    do_write(liste_clients[i].lst_sock, message.buffer);
+                }
             }
             break;
 
