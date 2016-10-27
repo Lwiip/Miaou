@@ -20,6 +20,9 @@
 #include <time.h>
 
 
+#define FALSE 0
+#define TRUE 1
+
 // #include "../commons/network.h"
 // #include "server.h"
 
@@ -39,7 +42,7 @@ typedef struct{
     Client sender;
     char * buffer;
     Send_to destination;
-    char * channel_dest_name;
+    char * dest_name;   //pour une channel ou un user
 }Message;
 
 typedef struct st_subscribers{
@@ -61,9 +64,11 @@ void error(const char *msg)
 
 void init_message(Message * message){
     message->buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    message->dest_name = (char *)malloc(BUFFER_SIZE * sizeof(char));
 }
 void free_message(Message * message){
     free(message->buffer);
+    free(message->dest_name);
 }
 
 int do_socket(int domain, int type, int protocol) {
@@ -151,14 +156,13 @@ void do_write(int sockfd, char* text){
 }
 
 void do_send(Message message, Client * liste_clients, int compteur){
-
+    int i = 0;
     switch (message.destination){
         case no_one: ;
             do_write((message.sender).lst_sock, message.buffer);
             break;
 
-        case 1 : ;//everyone
-            int i = 0;
+        case everyone : ;//everyone
             for (i = 0; i < compteur; ++i){
                 if ((message.sender).lst_sock != liste_clients[i].lst_sock){ //on n'envoie pas au sender
                     do_write(liste_clients[i].lst_sock, message.buffer);
@@ -166,12 +170,19 @@ void do_send(Message message, Client * liste_clients, int compteur){
             }
             break;
 
+        case user : ;
+            for (i = 0; i < compteur; ++i){
+                if (strcmp(liste_clients[i].pseudo, message.dest_name) == 0){ //on envoie qu'a la dest
+                    do_write(liste_clients[i].lst_sock, message.buffer);
+                    return; //sort de la fonction
+                }
+            }
+            break;
+
         default:
             perror("Aucune destination pour ce message");
             break;
-}
-
-    
+    }  
 }
 
 
@@ -297,6 +308,33 @@ void display_help(char * buffer){
         "\t- /whois [pseudo] \t> affiche les informations relatives au joueur\n");
 }
 
+void whisp(char ** copy_buffer, Message * message, Client * liste_clients, int compteur, char * sender_name){
+    char * argument = strsep(copy_buffer, " ");
+
+    memset(message->buffer, 0, BUFFER_SIZE);
+
+    int i = 0;
+    int exist = FALSE;
+    for (i = 0; i < compteur; ++i){
+        if (strcmp(liste_clients[i].pseudo, argument) == 0){ //si on trouve le destinataire
+            exist = TRUE;
+            break;
+        }
+    }
+
+    if (exist){
+        message->destination = user;
+        strcpy(message->dest_name, argument);
+
+        snprintf(message->buffer, BUFFER_SIZE, ">>> Whisp from %s : %s\n", sender_name, *copy_buffer); //supprime la commande et l'argument du message a transmettre
+    } else {
+        message->destination = user;
+        strcpy(message->dest_name, (message->sender).pseudo); //on renvoie un message d'erreur
+
+        snprintf(message->buffer, BUFFER_SIZE, "/!\\ utilisateur non trouvé !\n"); //supprime la commande et l'argument du message a transmettre
+    }
+}
+
 int do_commande(Message * message, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = message->buffer;
     char local_copy_buffer[BUFFER_SIZE];
@@ -316,7 +354,8 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
     case 0 :
         if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
-            message->destination = everyone;
+            message->destination = user;
+            strcpy(message->dest_name, liste_clients[i].pseudo);
         }
 
         return 1; //on rentre dans le send
@@ -336,6 +375,10 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         } else if (strcmp(commande, "/a") == 0){ //message to all
             snprintf(message->buffer, BUFFER_SIZE, "%s\n", copy_buffer); //supprime la commande du message a transmettre
             message->destination = everyone;
+            memset(message->dest_name, 0, BUFFER_SIZE);
+        } else if (strcmp(commande, "/w") == 0){
+            whisp(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
+
         } else { //aucune commande
             if ((message->sender).user_channel == NULL){ //si on n'est PAS dans une channel 
                 //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
@@ -345,7 +388,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
                 display_help(message->buffer);
             } else {
                 message->destination = channel;
-                message->channel_dest_name = (message->sender).user_channel;
+                message->dest_name = (message->sender).user_channel;
             }
         }
 
