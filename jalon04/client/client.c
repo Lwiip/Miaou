@@ -49,6 +49,7 @@ struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* host
     //check de l'erreur
     if (connect(sock, (struct sockaddr *) &sock_host, sizeof(sock_host)) == -1){
         perror("erreur connect");
+        exit(-1);
     }
     return sock_host;
 }
