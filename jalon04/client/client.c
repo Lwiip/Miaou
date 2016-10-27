@@ -133,9 +133,8 @@ int main(int argc,char** argv)
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
         FD_SET(sock, &fds);
-        printf(">\n");
+
         select(sock+1, &fds, NULL, NULL, 0);
-        printf(">>\n");
 
 
         if (FD_ISSET(sock, &fds)){ //si la modification est faite sur l'ecoute
