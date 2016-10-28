@@ -26,12 +26,6 @@ struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* host
     return sock_host;
 }
 
-void useless(){
-    if (TRUE){
-        printf("ok\n");
-    }
-}
-
 int read_line(char *text){
     //recupere la saisie utilisateur (max de BUFFER_SIZE)
 
@@ -77,7 +71,6 @@ int main(int argc,char** argv)
 
     struct sockaddr_in sock_host;
     int sock;
-
     fd_set fds;
 
     //get address info from the server
@@ -85,6 +78,11 @@ int main(int argc,char** argv)
     //get port
     int port = atoi(argv[2]);
     // get_addr_info()
+
+    // Variables pour l'utilisateur coté client
+    char user_name[BUFFER_SIZE];
+    strcpy(user_name, ""); //met le nom vide
+    int registered = FALSE;
 
     //get the socket
     sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -109,6 +107,7 @@ int main(int argc,char** argv)
 
         // select(sock+1, &fds, NULL, NULL, 0);
 
+
         if (FD_ISSET(STDIN_FILENO, &fds)){ //si la modification est faite sur stdin
             // read_line(text);
             memset(text, 0, BUFFER_SIZE);
@@ -129,20 +128,35 @@ int main(int argc,char** argv)
             do_write(sock, text);
         }
 
+        if (!registered){
+            char local_copy_text[BUFFER_SIZE];
+            char * copy_text = local_copy_text;
+            strcpy(copy_text, text);
+            
+            char * commande = strsep(&copy_text, " ");
+
+            if (strcmp(commande, "/nick") == 0){
+                copy_text[strlen(copy_text) - 1] = '\0';
+                
+                registered = TRUE;
+                snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
+            }
+        }
+        
 
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
         FD_SET(sock, &fds);
+        printf("%s > ", user_name);
+        fflush(stdout);
 
         select(sock+1, &fds, NULL, NULL, 0);
 
-
         if (FD_ISSET(sock, &fds)){ //si la modification est faite sur l'ecoute
-            do_read(sock, text);
-            
-        }
-        
+            do_read(sock, text);            
+        }        
     }
+
     // free(text);
     close(sock);
     // nonblock(NB_DISABLE);

@@ -44,7 +44,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
     } else {
         memset(buffer, 0, BUFFER_SIZE);
-        snprintf(buffer, BUFFER_SIZE, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
+        snprintf(buffer, BUFFER_SIZE, "Veuillez vous enregistrer avec la commande /nick [pseudo]\n");
         return 0; //on n'a pas fait la commande nick
     }
 }
@@ -100,7 +100,6 @@ Pas a exporter
 void commande_help(Message * message){
     memset(message->buffer, 0, BUFFER_SIZE);
     strcat(message->buffer, "Commandes diponibles :\n"
-        "\t- /nick [pseudo] \t> ajoute ou modifie votre pseudo\n"
         "\t- /q \t\t\t> ferme le chat\n"
         "\t- /who \t\t\t> affiche les utilisateurs en ligne\n"
         "\t- /whois [pseudo] \t> affiche les informations relatives au joueur\n");
