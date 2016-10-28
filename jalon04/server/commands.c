@@ -26,6 +26,12 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
     if (strcmp(commande, "/nick") == 0){
         argument = strsep(copy_buffer, " ");
+
+        if (argument == 0){ //s'il n'y a pas d'argument
+        	memset(buffer, 0, BUFFER_SIZE);
+        	snprintf(buffer, BUFFER_SIZE, "Veuillez mettre un pseudo comme argument : /nick [pseudo]\n");
+        	return 0; //la commande n'a pas ete bien effectuée
+        }
         liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
         strcpy(liste_clients[i].pseudo, argument);
 
