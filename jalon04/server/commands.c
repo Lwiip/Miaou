@@ -128,7 +128,7 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
         message->destination = user;
         strcpy(message->dest_name, argument);
 
-        snprintf(message->buffer, BUFFER_SIZE, ">>> Whisp from %s : %s\n", sender_name, *copy_buffer); //supprime la commande et l'argument du message a transmettre
+        snprintf(message->buffer, BUFFER_SIZE, "%s[%s] : %s\n%s", TEXT_COLOR_MAGENTA ,sender_name, *copy_buffer, TEXT_COLOR_RESET); //supprime la commande et l'argument du message a transmettre
     } else {
         message->destination = no_one; //on renvoie un message d'erreur
 
@@ -175,7 +175,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         } else if (strcmp(commande, "/help") == 0){
             commande_help(message);
         } else if (strcmp(commande, "/a") == 0){ //message to all
-            snprintf(message->buffer, BUFFER_SIZE, "%s\n", copy_buffer); //supprime la commande du message a transmettre
+            snprintf(message->buffer, BUFFER_SIZE, "[%s] : %s\n", (message->sender).pseudo, copy_buffer); //supprime la commande du message a transmettre
             message->destination = everyone;
             memset(message->dest_name, 0, BUFFER_SIZE);
         } else if (strcmp(commande, "/w") == 0){

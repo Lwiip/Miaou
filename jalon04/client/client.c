@@ -49,6 +49,7 @@ void do_read(int sock, char * text){
         perror("erreur lors de la reception");
     } else {
         text[length_r_buff] = '\0';
+        printf("%c[2K", 27); // efface la ligne dans la console
         fputs(text, stdout);
     }
 }
