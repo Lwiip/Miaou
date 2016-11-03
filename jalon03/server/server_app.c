@@ -151,15 +151,6 @@ void set_buffer(char * buffer, char * message){
     strcat(buffer, "\n");
 }
 
-int anti_dump(char * buffer,char * commande){
-    if ((strlen(buffer) -1)==strlen(commande)){  //éviter le seg fault si juste /nick
-        set_buffer(buffer, "La commande que vous avez utilisez n'est pas valide\n");
-        return 0;
-    }
-    return 1;
-}
-
-
 void display_clients_pseudo(Client * liste_clients, int compteur, char * buffer){
     int i = 0;
     memset(buffer, 0, BUFFER_SIZE);
@@ -258,9 +249,10 @@ int display_client_info(char * commande, Client * liste_clients, int compteur, c
 
 int do_commande(char * buffer, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     char * commande = buffer;
-    char * copy_buffer;
+    char local_copy_buffer[BUFFER_SIZE];
+    char * copy_buffer = local_copy_buffer;
 
-    copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    // copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
@@ -273,17 +265,17 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
     }
 
     switch (liste_clients[i].registered) {
-        case 0 :
+    case 0 :
         if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer, 0)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
-        free(copy_buffer);
+        // free(copy_buffer);
 
         return 1; //on rentre dans le send
         break;
 
-        case 1 : //si on est enregistre
+    case 1 : //si on est enregistre
         if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer,1)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
@@ -296,12 +288,12 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
             display_client_info(commande,liste_clients, *compteur, buffer, &copy_buffer);
         }
 
-        free(copy_buffer);
+        // free(copy_buffer);
 
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;
 
-        default :
+    default :
         perror("liste_clients.registered different de 0 ou 1 !");
         return 0;
         break;
