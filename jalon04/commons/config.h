@@ -9,12 +9,12 @@
 #define SIZE_DATE 128
 
 //les commandes du serveur (custom maggle !)
-static const char COMMAND_QUIT[] = "/q";
-static const char COMMAND_NICK[] = "/n";
-static const char COMMAND_WHO[] = "/who";
+static const char COMMAND_QUIT[] = 	"/q";
+static const char COMMAND_NICK[] = 	"/n";
+static const char COMMAND_WHO[] = 	"/who";
 static const char COMMAND_WHOIS[] = "/whois";
-static const char COMMAND_ALL[] = "/a";
+static const char COMMAND_ALL[] = 	"/a";
 static const char COMMAND_WHISP[] = "/w";
-static const char COMMAND_HELP[] = "/h";
+static const char COMMAND_HELP[] = 	"/h";
 
 #endif /* CONFIG */

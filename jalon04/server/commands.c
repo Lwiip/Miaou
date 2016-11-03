@@ -7,7 +7,7 @@
 Utilisée dans server pour gerer les cas de crash client donc a exporter
 */
 int commande_quit(char * commande, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
-    if (strcmp(commande, "/q") == 0 || retour_client == 0){ //si deco
+    if (strcmp(commande, COMMAND_QUIT) == 0 || retour_client == 0){ //si deco
         printf("Deconnection du client\n");
         close(liste_clients[i].lst_sock);
         FD_CLR(liste_clients[i].lst_sock, readfds); //enlève le client de l'ecoute
@@ -25,11 +25,11 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
     char * argument;
 
     if ((strlen(buffer) -1)==strlen(commande) && !change_name ){  //éviter le seg fault si juste /nick
-        snprintf(buffer, BUFFER_SIZE, "Entrez un pseudo valide avec /nick pseudo!\n");
+        snprintf(buffer, BUFFER_SIZE, "Entrez un pseudo valide avec %s pseudo!\n", COMMAND_NICK);
         return 0;
     }
 
-    if (strcmp(commande, "/nick") == 0){
+    if (strcmp(commande, COMMAND_NICK) == 0){
         argument = strsep(copy_buffer, " ");
 
         if (!change_name) {
@@ -46,7 +46,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
     } else if (!change_name) {
         memset(buffer, 0, BUFFER_SIZE);
-        snprintf(buffer, BUFFER_SIZE, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
+        snprintf(buffer, BUFFER_SIZE, "Veuillez vous enregistrer avec la commande %s [pseudo]", COMMAND_NICK);
         return 0; //on n'a pas fait la commande nick
     }
 }
@@ -103,10 +103,14 @@ Pas a exporter
 */
 void commande_help(Message * message){
     memset(message->buffer, 0, BUFFER_SIZE);
-    strcat(message->buffer, "Commandes diponibles :\n"
-        "\t- /q \t\t\t> ferme le chat\n"
-        "\t- /who \t\t\t> affiche les utilisateurs en ligne\n"
-        "\t- /whois [pseudo] \t> affiche les informations relatives au joueur\n");
+    snprintf(message->buffer, BUFFER_SIZE, "Commandes diponibles :\n"
+        "\t- %s \t\t\t> ferme le chat\n"
+        "\t- %s \t\t\t> affiche les utilisateurs en ligne\n"
+        "\t- %s [pseudo] \t> affiche les informations relatives au joueur\n"
+        "\t- %s \t\t\t> change de pseudo\n"
+        "\t- %s \t\t\t> envoyer un message a tout le monde\n"
+        "\t- %s [pseudo] \t\t> envoyer un message a une personne\n", 
+        COMMAND_QUIT, COMMAND_WHO, COMMAND_WHOIS, COMMAND_NICK, COMMAND_ALL, COMMAND_WHISP);
 
     message->destination = no_one;
 }
@@ -171,31 +175,29 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         break;
 
     case 1 : //si on est enregistre
-        if (strcmp(commande, "/nick") == 0){
+        if (strcmp(commande, COMMAND_NICK) == 0){
             if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 1)){
                 printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
             }
-        } else if (strcmp(commande, "/who") == 0) {
+        } else if (strcmp(commande, COMMAND_WHO) == 0) {
             commande_who(liste_clients, *compteur, message);
-        } else if (strcmp(commande, "/whois") == 0){
+        } else if (strcmp(commande, COMMAND_WHOIS) == 0){
             commande_whois(liste_clients, *compteur, message->buffer, &copy_buffer);
             message->destination = no_one;
-        } else if (strcmp(commande, "/help") == 0){
+        } else if (strcmp(commande, COMMAND_HELP) == 0){
             commande_help(message);
-        } else if (strcmp(commande, "/a") == 0){ //message to all
+        } else if (strcmp(commande, COMMAND_ALL) == 0){ //message to all
             snprintf(message->buffer, BUFFER_SIZE, "[%s] : %s\n", (message->sender).pseudo, copy_buffer); //supprime la commande du message a transmettre
             message->destination = everyone;
             memset(message->dest_name, 0, BUFFER_SIZE);
-        } else if (strcmp(commande, "/w") == 0){
+        } else if (strcmp(commande, COMMAND_WHISP) == 0){
             commande_whisp(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
 
         } else { //aucune commande
             if ((message->sender).user_channel == NULL){ //si on n'est PAS dans une channel 
                 //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
                 memset(message->buffer, 0, BUFFER_SIZE);
-                snprintf(message->buffer, BUFFER_SIZE, "Votre message ne contenait pas de commande, cela n'est possible "
-                "que si vous etes dans une channel, or ce n'est pas le cas.\n");
-                commande_help(message);
+                snprintf(message->buffer, BUFFER_SIZE,  TEXT_COLOR_BOLD TEXT_COLOR_YELLOW "/!\\ " TEXT_COLOR_UNBOLD TEXT_COLOR_RED "Erreur commande.\nFaite %s pour obtenir l'aide\n" TEXT_COLOR_RESET, COMMAND_HELP);
             } else {
                 message->destination = channel;
                 message->dest_name = (message->sender).user_channel;

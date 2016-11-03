@@ -136,7 +136,7 @@ int main(int argc,char** argv)
             
             char * commande = strsep(&copy_text, " ");
 
-            if (strcmp(commande, "/nick") == 0){
+            if (strcmp(commande, COMMAND_NICK) == 0){
                 copy_text[strlen(copy_text) - 1] = '\0';
                 
                 registered = TRUE;
