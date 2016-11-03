@@ -104,7 +104,7 @@ int main(int argc,char** argv)
 		//lit l'entrée utilisateur
 		if (read_line(text)){
 
-            if (strcmp(text, "/q\n\0") == 0){
+            if (strcmp(text, "/quit\n\0") == 0){ // si le client envoie /quit on se déconnecte
                 printf("Deconnection\n");
                 break;
             }

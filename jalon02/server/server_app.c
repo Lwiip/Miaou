@@ -174,7 +174,6 @@ int main(int argc, char** argv){
     int max = lst_sock;
 
 
-
 	/*
 	Debut code
 	*/
@@ -242,7 +241,7 @@ int main(int argc, char** argv){
 
 					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
 
-					if (strcmp(buffer, "/q\n\0") == 0 || retour_client == 0){ //si deco
+					if (strcmp(buffer, "/quit\n\0") == 0 || retour_client == 0){ //si deco
                         printf("Deconnection du client\n");
                         close(liste_clients[i].lst_sock);
                         FD_CLR(liste_clients[i].lst_sock, &readfds); //enlève le client de l'ecoute
