@@ -384,15 +384,15 @@ int main(int argc, char** argv){
             FD_SET(liste_clients[i].lst_sock, &readfds);
         }
 
-        // readfds2=readfds;
+        readfds2=readfds;
         //utilisation de select
-        if(-1 == select(max + 1, &readfds, 0, 0, 0)){
+        if(-1 == select(max + 1, &readfds2, 0, 0, 0)){
             perror("erreur dans l'appel a select()");
             exit(errno);
         }
 
         // Si il y a eu un chgt sur la socket principal d'écoute
-        if(FD_ISSET(lst_sock, &readfds)){
+        if(FD_ISSET(lst_sock, &readfds2)){
             /*ajoute un client a la liste*/
             int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
 
@@ -425,16 +425,16 @@ int main(int argc, char** argv){
             int i = 0;
             for(i = 0; i < compteur; i++){
                 /* un client ecrit */
-                if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
+                if(FD_ISSET(liste_clients[i].lst_sock, &readfds2)){
 
                     int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
-                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
+                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds2); //check crash client (ctrl + c)
 
                     if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
                     printf("Entrée : %s", buffer);
 
-                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){ //si la commande n'est pas quit
+                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds2)){ //si la commande n'est pas quit
                             printf("Sortie : %s\n", buffer);
                             do_write(liste_clients[i].lst_sock, buffer); //repond
 
