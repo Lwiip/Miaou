@@ -49,7 +49,7 @@ int do_socket(int domain, int type, int protocol) {
     int option = setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &yes, sizeof(int));
 
     if ( option == -1)
-        error("ERROR setting socket options");
+    error("ERROR setting socket options");
 
     return sockfd;
 }
@@ -93,9 +93,9 @@ int do_accept(int sock, struct sockaddr_in * adr){
     int addrlen=sizeof(adr);
     int new_sock=accept(sock, (struct sockaddr *) &adr,&addrlen);
     if(new_sock==-1)
-      printf("Desole, je ne peux pas accepter la session TCP\n");
-      else
-      printf("connection      : OK\n");
+    printf("Desole, je ne peux pas accepter la session TCP\n");
+    else
+    printf("connection      : OK\n");
     return new_sock;
 
 }
@@ -121,11 +121,11 @@ void do_write(int sockfd, char* text){
 
 void clear_clients(Client *liste_clients, int compteur)
 {
-   int i = 0;
-   for(i = 0; i < compteur; i++)
-   {
-      close(liste_clients[i].lst_sock);
-   }
+    int i = 0;
+    for(i = 0; i < compteur; i++)
+    {
+        close(liste_clients[i].lst_sock);
+    }
 }
 
 int remove_client(Client * liste_clients, int i, int compteur){
@@ -134,15 +134,15 @@ int remove_client(Client * liste_clients, int i, int compteur){
     int w = k;
 
     for (k; k < compteur -1; k++) { //jusqu'a compteur -1 car on suppr une personne
-        if (k == i) {
-            w++;
-            free(liste_clients[i].pseudo);
-        }
-        liste_clients[k] = liste_clients[w];
+    if (k == i) {
         w++;
+        free(liste_clients[i].pseudo);
     }
+    liste_clients[k] = liste_clients[w];
+    w++;
+}
 
-    return --compteur;
+return --compteur;
 }
 
 void set_buffer(char * buffer, char * message){
@@ -192,17 +192,20 @@ int commande_quit(char * commande, int retour_client, Client * liste_clients, in
     }
 }
 
-int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer){
+int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer, int change_name){
     char * argument;
 
-    if ((strlen(buffer) -1)==strlen(commande) ){  //éviter le seg fault si juste /nick
+    if ((strlen(buffer) -1)==strlen(commande) && !change_name ){  //éviter le seg fault si juste /nick
         set_buffer(buffer, "Entrez un pseudo valide avec /nick pseudo!\n");
         return 0;
     }
 
     if (strcmp(commande, "/nick") == 0){
         argument = strsep(copy_buffer, " ");
-        liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
+
+        if (!change_name) {
+            liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
+        }
         strcpy(liste_clients[i].pseudo, argument);
 
         memset(buffer, 0, BUFFER_SIZE);
@@ -212,7 +215,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
         return 1; //on a bien fait la commande nick
 
-    } else {
+    } else if (!change_name) {
         set_buffer(buffer, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
         return 0; //on n'a pas fait la commande nick
     }
@@ -257,12 +260,12 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
 
     if (commande_quit(commande, retour_client, liste_clients, i, compteur, readfds)){ //si deco
-        return 10; //on ne veut pas rentrer dans le send
+        return 0; //on ne veut pas rentrer dans le send
     }
 
     switch (liste_clients[i].registered) {
-    case 0 :
-        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer)){
+        case 0 :
+        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer, 0)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
@@ -271,7 +274,11 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         return 1; //on rentre dans le send
         break;
 
-    case 1 : //si on est enregistre
+        case 1 : //si on est enregistre
+        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer,1)){
+            printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
+        }
+
         if (strcmp(commande, "/who") == 0) {
             display_clients_pseudo(liste_clients, *compteur, buffer);
         }
@@ -285,7 +292,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;
 
-    default :
+        default :
         perror("liste_clients.registered different de 0 ou 1 !");
         return 0;
         break;
@@ -320,9 +327,9 @@ void get_ip_port_client(int rep_sock, Client * liste_clients, int compteur){
 int main(int argc, char** argv){
 
 
-	/*
-	Initialisation variables
-	*/
+    /*
+    Initialisation variables
+    */
     if (argc != 2){
         fprintf(stderr, "usage: RE216_SERVER port\n");
         return 1;
@@ -345,11 +352,11 @@ int main(int argc, char** argv){
 
 
 
-	/*
-	Debut code
-	*/
+    /*
+    Debut code
+    */
 
-	/*Initialisation du serveur*/
+    /*Initialisation du serveur*/
 
     //init the serv_add structure
     init_serv_addr(port, &serv_addr);
@@ -358,11 +365,11 @@ int main(int argc, char** argv){
     //we bind on the tcp port specified
     do_bind(lst_sock, serv_addr);
 
-	//specify the socket to be a server socket and listen for at most 20 concurrent client
+    //specify the socket to be a server socket and listen for at most 20 concurrent client
     do_listen(lst_sock);
 
     int a = 0;
-	/*Boucle du serveur*/
+    /*Boucle du serveur*/
     for (;;){
         int i = 0;
         //on vide l'ensemble readfds
@@ -373,24 +380,24 @@ int main(int argc, char** argv){
 
         //parcourt de la liste_clients et ajout des sockets d'écoute dans le fd_set
         for(i = 0; i < compteur; i++){
-           FD_SET(liste_clients[i].lst_sock, &readfds);
+            FD_SET(liste_clients[i].lst_sock, &readfds);
         }
 
-        readfds2=readfds;
+        // readfds2=readfds;
         //utilisation de select
-        if(-1 == select(max + 1, &readfds2, 0, 0, 0)){
-           perror("erreur dans l'appel a select()");
-           exit(errno);
+        if(-1 == select(max + 1, &readfds, 0, 0, 0)){
+            perror("erreur dans l'appel a select()");
+            exit(errno);
         }
 
         // Si il y a eu un chgt sur la socket principal d'écoute
-        if(FD_ISSET(lst_sock, &readfds2)){
-    		/*ajoute un client a la liste*/
-    		int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
+        if(FD_ISSET(lst_sock, &readfds)){
+            /*ajoute un client a la liste*/
+            int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
 
 
 
-    		printf("\nNouveau client : %i\n", rep_sock);
+            printf("\nNouveau client : %i\n", rep_sock);
 
             //Calcul du max
             if (rep_sock>max){
@@ -416,29 +423,27 @@ int main(int argc, char** argv){
 
             int i = 0;
             for(i = 0; i < compteur; i++){
-			/* un client ecrit */
-				if(FD_ISSET(liste_clients[i].lst_sock, &readfds2)){
+                /* un client ecrit */
+                if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
 
-					int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
-                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds2); //check crash client (ctrl + c)
+                    int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
+                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
 
                     if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
                         printf("Entrée : %s", buffer);
 
-                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds2)!=10){ //si la commande n'est pas quit
+                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){ //si la commande n'est pas quit
                             printf("Sortie : %s\n", buffer);
-
                             do_write(liste_clients[i].lst_sock, buffer); //repond
 
                         }
-                        break;
+                    break;
                     }
-               }
-           }
-		}
+                }
+            }
+        }
         a++;
     }
-
-    clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
+clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
 }
