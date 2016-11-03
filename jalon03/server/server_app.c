@@ -260,7 +260,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
     char * commande = buffer;
     char * copy_buffer;
 
-    //copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
+    copy_buffer = (char *)malloc(BUFFER_SIZE * sizeof(char));
 
     strcpy(copy_buffer,buffer);
     copy_buffer[strlen(copy_buffer) - 1] = '\0'; //-1 pour eviter le \n
@@ -278,7 +278,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
-        //free(copy_buffer);
+        free(copy_buffer);
 
         return 1; //on rentre dans le send
         break;
@@ -296,7 +296,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
             display_client_info(commande,liste_clients, *compteur, buffer, &copy_buffer);
         }
 
-        //free(copy_buffer);
+        free(copy_buffer);
 
         return 1;//si aucune commande, peutetre que c'est juste un message donc on rentre dans send
         break;
