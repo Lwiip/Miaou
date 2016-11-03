@@ -201,10 +201,10 @@ int commande_quit(char * commande, int retour_client, Client * liste_clients, in
     }
 }
 
-int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer,int rename){
+int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer, int change_name){
     char * argument;
 
-    if ((strlen(buffer) -1)==strlen(commande) && !rename ){  //éviter le seg fault si juste /nick
+    if ((strlen(buffer) -1)==strlen(commande) && !change_name ){  //éviter le seg fault si juste /nick
         set_buffer(buffer, "Entrez un pseudo valide avec /nick pseudo!\n");
         return 0;
     }
@@ -212,7 +212,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
     if (strcmp(commande, "/nick") == 0){
         argument = strsep(copy_buffer, " ");
 
-        if (rename) {
+        if (!change_name) {
             liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
         }
         strcpy(liste_clients[i].pseudo, argument);
@@ -224,7 +224,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
         return 1; //on a bien fait la commande nick
 
-    } else if (!rename) {
+    } else if (!change_name) {
         set_buffer(buffer, "Veuillez vous enregistrer avec la commande /nick [pseudo]");
         return 0; //on n'a pas fait la commande nick
     }
@@ -269,12 +269,12 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
 
 
     if (commande_quit(commande, retour_client, liste_clients, i, compteur, readfds)){ //si deco
-        return 10; //on ne veut pas rentrer dans le send
+        return 0; //on ne veut pas rentrer dans le send
     }
 
     switch (liste_clients[i].registered) {
         case 0 :
-        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer,0)){
+        if (commande_nick(commande, &copy_buffer, liste_clients, i, buffer, 0)){
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
@@ -288,7 +288,7 @@ int do_commande(char * buffer, int retour_client, Client * liste_clients, int i,
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
 
-        if (strcmp(commande, "/who") == 0 && anti_dump(buffer,commande)) {
+        if (strcmp(commande, "/who") == 0) {
             display_clients_pseudo(liste_clients, *compteur, buffer);
         }
 
@@ -392,15 +392,15 @@ int main(int argc, char** argv){
             FD_SET(liste_clients[i].lst_sock, &readfds);
         }
 
-        readfds2=readfds;
+        // readfds2=readfds;
         //utilisation de select
-        if(-1 == select(max + 1, &readfds2, 0, 0, 0)){
+        if(-1 == select(max + 1, &readfds, 0, 0, 0)){
             perror("erreur dans l'appel a select()");
             exit(errno);
         }
 
         // Si il y a eu un chgt sur la socket principal d'écoute
-        if(FD_ISSET(lst_sock, &readfds2)){
+        if(FD_ISSET(lst_sock, &readfds)){
             /*ajoute un client a la liste*/
             int rep_sock = do_accept(lst_sock,&serv_addr); //accept la connexion
 
@@ -433,28 +433,26 @@ int main(int argc, char** argv){
             int i = 0;
             for(i = 0; i < compteur; i++){
                 /* un client ecrit */
-                if(FD_ISSET(liste_clients[i].lst_sock, &readfds2)){
+                if(FD_ISSET(liste_clients[i].lst_sock, &readfds)){
 
                     int retour_client = do_read(liste_clients[i].lst_sock, buffer); //ecoute ce que le client envoie
-                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds2); //check crash client (ctrl + c)
+                    commande_quit("", retour_client, liste_clients, i, &compteur, &readfds); //check crash client (ctrl + c)
 
                     if (strlen(buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
                     printf("Entrée : %s", buffer);
 
-                    if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds2)!=10){ //si la commande n'est pas quit
-                    printf("Sortie : %s\n", buffer);
+                        if (do_commande(buffer, retour_client, liste_clients, i, &compteur, &readfds)){ //si la commande n'est pas quit
+                            printf("Sortie : %s\n", buffer);
+                            do_write(liste_clients[i].lst_sock, buffer); //repond
 
-                    do_write(liste_clients[i].lst_sock, buffer); //repond
-
+                        }
+                    break;
+                    }
                 }
-                break;
             }
         }
+        a++;
     }
-}
-a++;
-}
-
-clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
+    clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
 }
