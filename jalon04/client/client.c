@@ -8,6 +8,7 @@
 #include <netdb.h>
 
 #include "client.h"
+#include "commands.h"
 // #include "../commons/config.h" pas besoin car cet include est deja dans client.h
 
 struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* hostname, int port){
@@ -93,7 +94,7 @@ int main(int argc,char** argv)
 
 
         //get user input
-        char *text = malloc (sizeof (*text) * 1024);
+        char *text = malloc (sizeof (*text) * BUFFER_SIZE);
 
         // nonblock(NB_ENABLE);
 
@@ -158,7 +159,7 @@ int main(int argc,char** argv)
                 }
         }
 
-        // free(text);
+        free(text);
         close(sock);
         // nonblock(NB_DISABLE);
         return 0;
