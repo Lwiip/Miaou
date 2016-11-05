@@ -263,6 +263,8 @@ int main(int argc, char** argv){
                                 max=max;
                         }
 
+
+
                         //ajout de la nouvelle socket client a l'ecoute
                         FD_SET(rep_sock, &readfds2);
 

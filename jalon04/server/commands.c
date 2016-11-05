@@ -21,8 +21,9 @@ int commande_quit(char * commande, int retour_client, Client * liste_clients, in
 /*
    Pas besoin de l'exporter dans un .h car elle est interne a commande
  */
-int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer, int change_name){
+int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, int i, char * buffer, int change_name,int compteur){
         char * argument;
+        int k;
 
         if ((strlen(buffer) -1)==strlen(commande) && !change_name ) { //éviter le seg fault si juste /nick
                 snprintf(buffer, BUFFER_SIZE, "Entrez un pseudo valide avec %s pseudo!\n", COMMAND_NICK);
@@ -35,6 +36,16 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
                 if (!change_name) {
                         liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
                 }
+
+
+                // vérifie que le pseudo n'est pas déja utilisé
+                for (k = 0; k <=compteur; k++) {
+                        if(strcmp(argument,liste_clients[k].pseudo) == 0) {
+                                snprintf(buffer, BUFFER_SIZE, "Le pseudo est deja utilisé, veuillez en utiliser un autre !\n");
+                                return 0;
+                        }
+                }
+
                 strcpy(liste_clients[i].pseudo, argument);
 
                 memset(buffer, 0, BUFFER_SIZE);
@@ -60,7 +71,7 @@ void commande_who(Client * liste_clients, int compteur, Message * message){
         int i = 0;
         memset(message->buffer, 0, BUFFER_SIZE);
         for (i = 0; i < compteur; i++) {
-                strcat(message->buffer, "\t - \'");
+                strcat(message->buffer, "\t- \'");
                 strcat(message->buffer, liste_clients[i].pseudo);
                 strcat(message->buffer, "\'\n");
         }
@@ -166,7 +177,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
 
         switch (liste_clients[i].registered) {
         case 0:
-                if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 0)) {
+                if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 0,*compteur)) {
                         printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
                 }
                 message->destination = no_one; //repond au client
@@ -176,7 +187,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
 
         case 1: //si on est enregistre
                 if (strcmp(commande, COMMAND_NICK) == 0) {
-                        if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 1)) {
+                        if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 1,*compteur)) {
                                 printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
                         }
                 } else if (strcmp(commande, COMMAND_WHO) == 0) {
