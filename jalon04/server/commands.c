@@ -39,7 +39,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 
 
         // vérifie que le pseudo n'est pas déja utilisé
-        for (k = 0; k <=compteur; k++) {
+        for (k = 0; k < compteur; k++) {
             if(strcmp(argument,liste_clients[k].pseudo) == 0) {
                 snprintf(buffer, BUFFER_SIZE, "Le pseudo est deja utilisé, veuillez en utiliser un autre !\n");
                 return 0;
