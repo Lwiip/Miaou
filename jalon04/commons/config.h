@@ -16,5 +16,8 @@ static const char COMMAND_WHOIS[] = "/whois";
 static const char COMMAND_ALL[] = 	"/a";
 static const char COMMAND_WHISP[] = "/w";
 static const char COMMAND_HELP[] = 	"/h";
+static const char COMMAND_CREATE[] = "/c";
+static const char COMMAND_QUIT_SALON[]="/qs";
+static const char COMMAND_JOIN[] = 	"/j";
 
 #endif /* CONFIG */

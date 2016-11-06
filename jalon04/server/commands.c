@@ -156,11 +156,56 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
 }
 
 
+int commande_create(char ** copy_buffer, Client * liste_clients, int i, char * buffer,int compteur){
+    char * argument;
+    int k;
+
+    argument = strsep(copy_buffer, " ");
+    printf("coucou\n");
+    liste_clients[i].user_channel = (char *)malloc(strlen(argument) * sizeof(char));
+    printf("coucou\n");
+
+    for (k = 0; k <=compteur; k++) {
+        if(strcmp(argument,liste_clients[k].user_channel) == 0) {
+            snprintf(buffer, BUFFER_SIZE, "Le salon à déja été crée veuillez en utiliser un autre !\n");
+            return 0;
+        }
+    }
+
+    strcpy(liste_clients[i].user_channel, argument);
+    memset(buffer, 0, BUFFER_SIZE);
+    snprintf(buffer, BUFFER_SIZE, "Vous avez crée le salon: %s\n", liste_clients[i].user_channel);
+    return 1; //on a bien fait la commande create
+
+}
+
+
+int commande_quit_channel(char ** copy_buffer, Client * liste_clients, int i, int * compteur, char * buffer,int salon){
+    char * argument;
+    argument = strsep(copy_buffer, " ");
+    if(salon>0){
+        free(liste_clients[i].user_channel);
+        memset(buffer, 0, BUFFER_SIZE);
+        snprintf(buffer, BUFFER_SIZE, "Vous avez quitter le salon\n");
+        return 0;
+
+    }
+    else{
+        memset(buffer, 0, BUFFER_SIZE);
+        snprintf(buffer, BUFFER_SIZE, "Vous n'êtes pas dans un salon, impossible donc d'en partir !");
+        return 0;
+    }
+
+    return 0;
+}
+
+
 
 /*
 A exporter ça ^^
 */
 int do_commande(Message * message, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
+    int salon;
     char * commande = message->buffer;
     char local_copy_buffer[BUFFER_SIZE];
     char * copy_buffer = local_copy_buffer;
@@ -204,6 +249,22 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         } else if (strcmp(commande, COMMAND_WHISP) == 0) {
             commande_whisp(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
 
+            //
+
+        } else if (strcmp(commande, COMMAND_CREATE) == 0){
+            salon=commande_create(&copy_buffer, liste_clients,i,message->buffer,*compteur);
+        } else if (strcmp(commande, COMMAND_QUIT_SALON) == 0){
+            salon=commande_quit_channel(&copy_buffer,liste_clients,i, *compteur, message->buffer,salon);
+
+
+
+
+
+            /*    }  else if (strcmp(commande, COMMAND_JOIN) == 0) {
+            commande_join(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
+            */
+
+            //
         } else { //aucune commande
             if ((message->sender).user_channel == NULL) { //si on n'est PAS dans une channel
             //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
