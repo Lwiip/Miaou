@@ -48,6 +48,8 @@ void do_read(int sock, char * text){
     //gere l'erreur, si pas afficher le message
     if (0 >= length_r_buff) {
         perror("erreur lors de la reception");
+        printf("client crash\n");
+        exit(0);
     } else {
         text[length_r_buff] = '\0';
         printf("%c[2K", 27); // efface la ligne dans la console

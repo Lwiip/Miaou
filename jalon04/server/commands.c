@@ -180,7 +180,7 @@ int commande_create(char ** copy_buffer, Client * liste_clients, int i, char * b
 }
 
 
-int commande_quit_channel(char ** copy_buffer, Client * liste_clients, int i, int * compteur, char * buffer,int salon){
+int commande_quit_channel(char ** copy_buffer, Client * liste_clients, int i, char * buffer,int salon){
     char * argument;
     argument = strsep(copy_buffer, " ");
     if(salon>0){
@@ -254,7 +254,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         } else if (strcmp(commande, COMMAND_CREATE) == 0){
             salon=commande_create(&copy_buffer, liste_clients,i,message->buffer,*compteur);
         } else if (strcmp(commande, COMMAND_QUIT_SALON) == 0){
-            salon=commande_quit_channel(&copy_buffer,liste_clients,i, *compteur, message->buffer,salon);
+            salon=commande_quit_channel(&copy_buffer,liste_clients, i, message->buffer,salon);
 
 
 
