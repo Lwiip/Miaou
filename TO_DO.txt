@@ -1,4 +1,3 @@
 - Fermer plus proprement les sockets car on a tjr le port qui s'increment :/
-- faire en sorte que la commande /nick puisse modifier le pseudo
-- ajouter de la couleur
-- essayer de faire que ctrl + c coté serveur mette un message propre coté client et pas le sigabord
+- on a un pb lors d'un identification croisée
+- /who fait crasher le client, et seulement le client (surment un pb e l'envoie) 

@@ -87,31 +87,41 @@ int do_read(Message * message){
 void do_send(Message message, Client * liste_clients, int compteur){
     int i = 0;
     switch (message.destination) {
-        case no_one:;
+    case no_one:;
         do_write((message.sender).lst_sock, message.buffer);
         break;
 
-        case everyone:;  //everyone
+    case everyone:;  //everyone
         for (i = 0; i < compteur; ++i) {
             if ((message.sender).lst_sock != liste_clients[i].lst_sock) { //on n'envoie pas au sender
-            do_write(liste_clients[i].lst_sock, message.buffer);
+                do_write(liste_clients[i].lst_sock, message.buffer);
+            }
         }
-    }
-    break;
+        break;
 
     case user:;
-    for (i = 0; i < compteur; ++i) {
-        if (strcmp(liste_clients[i].pseudo, message.dest_name) == 0) { //on envoie qu'a la dest
-        do_write(liste_clients[i].lst_sock, message.buffer);
-        return; //sort de la fonction
-    }
-}
-break;
+        for (i = 0; i < compteur; ++i) {
+            if (strcmp(liste_clients[i].pseudo, message.dest_name) == 0) { //on envoie qu'a la dest
+                do_write(liste_clients[i].lst_sock, message.buffer);
+                return; //sort de la fonction
+            }
+        }
+        break;
 
-default:
-perror("Aucune destination pour ce message");
-break;
-}
+    case channel:;
+        Channel * target_channel = channel_find(message.dest_name, liste_clients, compteur);
+        
+        for (i = 0; i < compteur; ++i){
+            if (liste_clients[i].channel == target_channel){
+                do_write(liste_clients[i].lst_sock, message.buffer);
+            }
+        }
+        break;
+
+    default:
+        perror("Aucune destination pour ce message");
+        break;
+    }
 }
 
 
@@ -193,11 +203,18 @@ int main(int argc, char** argv){
 
     int port = atoi(argv[1]);
 
+    
+
     int compteur=0;
 
     Client liste_clients[MAX_CLIENTS];
+    
     Message message;
     init_message(&message);
+    
+    // List_Channels list_channels = list_channels_init();
+
+
 
     struct sockaddr_in serv_addr;
 
@@ -272,7 +289,7 @@ int main(int argc, char** argv){
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
-            liste_clients[compteur].user_channel = NULL;
+            liste_clients[compteur].channel = NULL; //dans aucune channel par def
             get_ip_port_client(rep_sock, liste_clients, compteur);
 
             printf("%s %i\n", liste_clients[compteur].ip, liste_clients[compteur].port);

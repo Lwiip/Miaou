@@ -48,7 +48,7 @@ void do_read(int sock, char * text){
     //gere l'erreur, si pas afficher le message
     if (0 >= length_r_buff) {
         perror("erreur lors de la reception");
-        printf("client crash\n");
+        printf("serveur crash\n");
         exit(0);
     } else {
         text[length_r_buff] = '\0';
@@ -86,6 +86,10 @@ int main(int argc,char** argv)
     // Variables pour l'utilisateur coté client
     char user_name[BUFFER_SIZE];
     strcpy(user_name, ""); //met le nom vide
+
+
+    char user_channel[BUFFER_SIZE];
+    strcpy(user_channel, ""); //met le nom de channel vide
     int registered = FALSE;
 
     //get the socket
@@ -132,26 +136,28 @@ int main(int argc,char** argv)
             do_write(sock, text);
         }
 
-        if (!registered) {
-            char local_copy_text[BUFFER_SIZE];
-            char * copy_text = local_copy_text;
-            strcpy(copy_text, text);
+        char local_copy_text[BUFFER_SIZE];
+        char * copy_text = local_copy_text;
+        strcpy(copy_text, text);
 
-            char * commande = strsep(&copy_text, " ");
+        char * commande = strsep(&copy_text, " ");
+        copy_text[strlen(copy_text) - 1] = '\0';
 
-            if (strcmp(commande, COMMAND_NICK) == 0) {
-                copy_text[strlen(copy_text) - 1] = '\0';
+        if (strcmp(commande, COMMAND_NICK) == 0) {
+            
 
-                registered = TRUE;
-                snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
-            }
+            registered = TRUE;
+            snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
+        }
+        if (strcmp(commande, COMMAND_JOIN) == 0) {
+            snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
         }
 
 
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
         FD_SET(sock, &fds);
-        printf("%s > ", user_name);
+        printf("%s%s > ", user_name, user_channel);
         fflush(stdout);
 
         select(sock+1, &fds, NULL, NULL, 0);

@@ -29,6 +29,7 @@ add_executable(RE216_JALON04_CLIENT ${SRC_CLIENT} ${SRC_COMMONS})
 SET(SRC_SERVER
 	server/commands.c
 	server/server_app.c
+	server/channel.c
 )
 
 
