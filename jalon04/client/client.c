@@ -90,7 +90,6 @@ int main(int argc,char** argv)
 
     char user_channel[BUFFER_SIZE];
     strcpy(user_channel, ""); //met le nom de channel vide
-    int registered = FALSE;
 
     //get the socket
     sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -141,12 +140,13 @@ int main(int argc,char** argv)
         strcpy(copy_text, text);
 
         char * commande = strsep(&copy_text, " ");
-        copy_text[strlen(copy_text) - 1] = '\0';
+
+        if (copy_text != NULL) { //si le texte envoyé ne contenait pas de commande (cas dans un salon)
+            copy_text[strlen(copy_text) - 1] = '\0';
+        }
+
 
         if (strcmp(commande, COMMAND_NICK) == 0) {
-            
-
-            registered = TRUE;
             snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
         }
         if (strcmp(commande, COMMAND_JOIN) == 0) {
