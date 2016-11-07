@@ -157,35 +157,41 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
 
 
 void commande_join_channel(char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
+    if (liste_clients[i].channel != NULL) { //si on es deja dans une channel
+        message->destination = no_one;
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez quitter le salon en 1er !" TEXT_COLOR_RESET);
+        return;
+    }
+
     char * argument = strsep(copy_buffer, " "); //argument contient le nom de la channel
+    Channel * channel;
 
     if (channel_exist(liste_clients, argument, compteur)){
-        liste_clients[i].channel = channel_find(argument, liste_clients, compteur);
+        channel = channel_find(argument, liste_clients, compteur);
+        liste_clients[i].channel = channel;
     } else {
         // snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_YELLOW TEXT_COLOR_BOLD "/!\\" TEXT_COLOR_UNBOLD TEXT_COLOR_MAGENTA " Cette channel n'existe pas !\n" TEXT_COLOR_RESET);
-        liste_clients[i].channel = channel_create(argument);
+        channel = channel_create(argument);
+        liste_clients[i].channel = channel;
     }
+    channel_add_subscriber(channel);
     message->destination = no_one;
     snprintf(message->buffer, BUFFER_SIZE, "Vous avez été déplacé dans le channel %s\n", argument);
 }
 
-int commande_quit_channel(char ** copy_buffer, Client * liste_clients, int i, char * buffer,int salon){
-    char * argument;
-    argument = strsep(copy_buffer, " ");
-    if(salon>0){
-        free(liste_clients[i].channel);
-        memset(buffer, 0, BUFFER_SIZE);
-        snprintf(buffer, BUFFER_SIZE, "Vous avez quitter le salon\n");
-        return 0;
-
-    }
-    else{
-        memset(buffer, 0, BUFFER_SIZE);
-        snprintf(buffer, BUFFER_SIZE, "Vous n'êtes pas dans un salon, impossible donc d'en partir !");
-        return 0;
+int commande_quit_channel(Client * liste_clients, int i, Message * message){
+    if (liste_clients[i].channel == NULL) { //si on n'est pas dans une channel
+        message->destination = no_one;
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez rejoindre un salon en 1er !\n" TEXT_COLOR_RESET);
+        return;
     }
 
-    return 0;
+    channel_rem_subscriber(liste_clients[i].channel);
+
+    liste_clients[i].channel = NULL;
+
+    message->destination = no_one;
+    snprintf(message->buffer, BUFFER_SIZE, "Sortie du salon\n");
 }
 
 
@@ -243,11 +249,11 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
 
         // } else if (strcmp(commande, COMMAND_CREATE) == 0){
         //     salon=commande_create(&copy_buffer, liste_clients,i,message->buffer,*compteur);
-        } else if (strcmp(commande, COMMAND_QUIT_SALON) == 0){
-            salon=commande_quit_channel(&copy_buffer,liste_clients, i, message->buffer,salon);
+    } else if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0){
+            commande_quit_channel(liste_clients, i, message);
         } else if (strcmp(commande, COMMAND_JOIN) == 0){
             commande_join_channel(&copy_buffer,liste_clients, i, *compteur, message);
-  
+
 
         } else { //aucune commande
             if ((message->sender).channel == NULL) { //si on n'est PAS dans une channel

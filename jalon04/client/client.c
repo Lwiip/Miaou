@@ -143,6 +143,8 @@ int main(int argc,char** argv)
 
         if (copy_text != NULL) { //si le texte envoyé ne contenait pas de commande (cas dans un salon)
             copy_text[strlen(copy_text) - 1] = '\0';
+        } else {
+            commande[strlen(commande) - 1] = '\0';
         }
 
 
@@ -151,6 +153,9 @@ int main(int argc,char** argv)
         }
         if (strcmp(commande, COMMAND_JOIN) == 0) {
             snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
+        }
+        if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
+            snprintf(user_channel, BUFFER_SIZE, "");
         }
 
 

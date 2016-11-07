@@ -5,6 +5,7 @@
 
 typedef struct{
     char name[100];
+    int nb_client;
 }Channel;
 
 typedef struct
@@ -32,6 +33,10 @@ typedef struct list_channels{
 
 
 void list_channels_init(List_Channels * list_channels);
+
+void channel_add_subscriber(Channel * channel);
+
+void channel_rem_subscriber(Channel * channel);
 
 Channel * channel_find(char * name_channel, Client * liste_clients, int compteur);
 

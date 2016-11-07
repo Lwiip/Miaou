@@ -26,7 +26,7 @@
 
 // 	//si elle n'est pas vide
 // 	List_Channels * list_tmp = list_channels;
-	
+
 // 	while (list_tmp->next != NULL && list_tmp->channel != NULL){
 // 		list_tmp = list_tmp->next;
 // 	}
@@ -55,7 +55,7 @@
 
 // 	//si elle n'est pas vide
 // 	Subscribers * list_tmp = list_subscribers;
-	
+
 // 	while (list_tmp->next != NULL && list_tmp->subscriber != NULL){
 // 		list_tmp = list_tmp->next;
 // 	}
@@ -79,11 +79,27 @@ Channel * channel_create(char * name_channel){
 	Channel * channel = malloc(sizeof(*channel));
 	strcpy(channel->name, name_channel);
 
-	// Subscribers list_subscribers = subscribers_init();	
+	// Subscribers list_subscribers = subscribers_init();
 	// channel->subscribers = list_subscribers;
 
 	// list_channels_add(channel);
 	return channel;
+}
+
+void channel_destroy(Channel * channel){
+	free(channel);
+}
+
+void channel_add_subscriber(Channel * channel){
+	channel->nb_client++;
+}
+
+void channel_rem_subscriber(Channel * channel){
+	if (channel->nb_client > 1){
+		channel->nb_client--;
+	} else {
+		channel_destroy(channel);
+	}
 }
 
 // void channel_add_subscriber(List_Channels * list_channels, char * name_channel, Client * client){
