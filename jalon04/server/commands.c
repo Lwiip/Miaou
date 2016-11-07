@@ -159,7 +159,7 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
 void commande_join_channel(char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
     if (liste_clients[i].channel != NULL) { //si on es deja dans une channel
         message->destination = no_one;
-        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez quitter le salon en 1er !" TEXT_COLOR_RESET);
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez quitter le salon en 1er !\n" TEXT_COLOR_RESET);
         return;
     }
 

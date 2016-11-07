@@ -151,7 +151,7 @@ int main(int argc,char** argv)
         if (strcmp(commande, COMMAND_NICK) == 0) {
             snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
         }
-        if (strcmp(commande, COMMAND_JOIN) == 0) {
+        if ((strcmp(commande, COMMAND_JOIN) == 0) && strlen(user_channel)==0 ) {
             snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
         }
         if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
