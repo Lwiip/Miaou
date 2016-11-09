@@ -73,7 +73,7 @@ int do_accept(int sock, struct sockaddr_in * adr){
 }
 
 int do_read(Message * message){
-    memset(message->buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valuers nulles dans le buff
+    memset(message->buffer, 0, BUFFER_SIZE); //on s'assure d'avoir des valeurs nulles dans le buff
     int length_r_buff = recv((message->sender).lst_sock, message->buffer, BUFFER_SIZE -1, 0);
 
     if (length_r_buff < 0) {
@@ -110,7 +110,7 @@ void do_send(Message message, Client * liste_clients, int compteur){
 
     case channel:;
         Channel * target_channel = channel_find(message.dest_name, liste_clients, compteur);
-        
+
         for (i = 0; i < compteur; ++i){
             if (liste_clients[i].channel == target_channel){
                 do_write(liste_clients[i].lst_sock, message.buffer);
@@ -203,15 +203,15 @@ int main(int argc, char** argv){
 
     int port = atoi(argv[1]);
 
-    
+
 
     int compteur=0;
 
     Client liste_clients[MAX_CLIENTS];
-    
+
     Message message;
     init_message(&message);
-    
+
     // List_Channels list_channels = list_channels_init();
 
 
