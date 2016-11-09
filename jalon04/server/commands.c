@@ -3,6 +3,13 @@
 #include "commands.h"
 
 
+int check_commande_arg(char * buffer, char * commande){
+    if ((strlen(buffer) -1)==strlen(commande)) {
+        return FALSE;
+    }
+    return TRUE;
+}
+
 /*
 Utilisée dans server pour gerer les cas de crash client donc a exporter
 */
@@ -25,7 +32,7 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
     char * argument;
     int k;
 
-    if ((strlen(buffer) -1)==strlen(commande)) { //éviter le seg fault si juste /nick
+    if (check_commande_arg(buffer, commande)) { //éviter le seg fault si juste /nick
         snprintf(buffer, BUFFER_SIZE, "Entrez un pseudo valide avec %s pseudo!\n", COMMAND_NICK);
         return 0;
     }
@@ -83,7 +90,7 @@ void display_time(time_t connection_date, char * date){
 
 void commande_whois(char * commande,Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
 
-    if ((strlen(buffer) -1)==strlen(commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /whois)
+    if (check_commande_arg(buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /whois)
         snprintf(buffer, BUFFER_SIZE, "Entrez la commande %s [pseudo] \n",COMMAND_WHOIS);
         return;
     }
@@ -125,7 +132,12 @@ void commande_help(Message * message){
 }
 
 
-void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clients, int compteur, char * sender_name){
+void commande_whisp(char * commande, char ** copy_buffer, Message * message, Client * liste_clients, int compteur, char * sender_name){
+    if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /whois)
+        snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [pseudo] blabla \n",COMMAND_WHISP);
+        return;
+    }
+
     char * argument = strsep(copy_buffer, " ");
     memset(message->buffer, 0, BUFFER_SIZE);
 
@@ -152,7 +164,7 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
 
 void commande_join_channel(char * commande,char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
 
-    if ((strlen(message->buffer) -1)==strlen(commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
+    if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
             snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n",COMMAND_JOIN);
             return;
         }
@@ -181,17 +193,17 @@ void commande_join_channel(char * commande,char ** copy_buffer, Client * liste_c
 
 int commande_quit_channel(Client * liste_clients, int i, Message * message){
     if (liste_clients[i].channel == NULL) { //si on n'est pas dans une channel
+        message->destination = no_one;
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez rejoindre un salon en 1er !\n" TEXT_COLOR_RESET);
+        return;
+    }
+
+    channel_rem_subscriber(liste_clients[i].channel);
+
+    liste_clients[i].channel = NULL;
+
     message->destination = no_one;
-    snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez rejoindre un salon en 1er !\n" TEXT_COLOR_RESET);
-    return;
-}
-
-channel_rem_subscriber(liste_clients[i].channel);
-
-liste_clients[i].channel = NULL;
-
-message->destination = no_one;
-snprintf(message->buffer, BUFFER_SIZE, "Sortie du salon\n");
+    snprintf(message->buffer, BUFFER_SIZE, "Sortie du salon\n");
 }
 
 
@@ -213,7 +225,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
     }
 
     switch (liste_clients[i].registered) {
-        case 0:
+    case 0:
         if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 0,*compteur)) {
             printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
         }
@@ -222,7 +234,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         return 1; //on rentre dans le send
         break;
 
-        case 1: //si on est enregistre
+    case 1: //si on est enregistre
         if (strcmp(commande, COMMAND_NICK) == 0) {
             if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 1,*compteur)) {
                 printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
@@ -241,7 +253,7 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
             message->destination = everyone;
             memset(message->dest_name, 0, BUFFER_SIZE);
         } else if (strcmp(commande, COMMAND_WHISP) == 0) {
-            commande_whisp(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
+            commande_whisp(commande, &copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
 
         } else if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0){
             commande_quit_channel(liste_clients, i, message);
@@ -251,24 +263,24 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
 
         } else { //aucune commande
             if ((message->sender).channel == NULL) { //si on n'est PAS dans une channel
-            //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
-            memset(message->buffer, 0, BUFFER_SIZE);
-            snprintf(message->buffer, BUFFER_SIZE,  TEXT_COLOR_BOLD TEXT_COLOR_YELLOW "/!\\ " TEXT_COLOR_UNBOLD TEXT_COLOR_RED "Erreur commande.\nFaite %s pour obtenir l'aide\n" TEXT_COLOR_RESET, COMMAND_HELP);
-        } else {
-            char sauv[BUFFER_SIZE];
-            strcpy(sauv, message->buffer);
-            snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_GREEN TEXT_COLOR_BOLD "[%s]" TEXT_COLOR_UNBOLD " : %s" TEXT_COLOR_RESET, (message->sender).pseudo, sauv);
-            message->destination = channel;
-            message->dest_name = ((message->sender).channel)->name;
+                //il faut au moins une commande pour envoyer un message donc on renvoie une erreur
+                memset(message->buffer, 0, BUFFER_SIZE);
+                snprintf(message->buffer, BUFFER_SIZE,  TEXT_COLOR_BOLD TEXT_COLOR_YELLOW "/!\\ " TEXT_COLOR_UNBOLD TEXT_COLOR_RED "Erreur commande.\nFaite %s pour obtenir l'aide\n" TEXT_COLOR_RESET, COMMAND_HELP);
+            } else {
+                char sauv[BUFFER_SIZE];
+                strcpy(sauv, message->buffer);
+                snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_GREEN TEXT_COLOR_BOLD "[%s]" TEXT_COLOR_UNBOLD " : %s" TEXT_COLOR_RESET, (message->sender).pseudo, sauv);
+                message->destination = channel;
+                message->dest_name = ((message->sender).channel)->name;
+            }
         }
-    }
 
-    return 1; //si aucune commande, peutetre que c'est juste un message donc on rentre dans send
-    break;
+        return 1; //si aucune commande, peutetre que c'est juste un message donc on rentre dans send
+        break;
 
     default:
-    perror("liste_clients.registered different de 0 ou 1 !");
-    return 0;
-    break;
-}
+        perror("liste_clients.registered different de 0 ou 1 !");
+        return 0;
+        break;
+    }
 }

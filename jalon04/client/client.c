@@ -86,6 +86,7 @@ int main(int argc,char** argv)
     // Variables pour l'utilisateur coté client
     char user_name[BUFFER_SIZE];
     strcpy(user_name, ""); //met le nom vide
+    int registered = 0;
 
 
     char user_channel[BUFFER_SIZE];
@@ -147,17 +148,22 @@ int main(int argc,char** argv)
             commande[strlen(commande) - 1] = '\0';
         }
 
-
+        
         if (strcmp(commande, COMMAND_NICK) == 0) {
             snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
-        }
-        if ((strcmp(commande, COMMAND_JOIN) == 0) && strlen(user_channel)==0 ) {
-            snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
-        }
-        if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
-            snprintf(user_channel, BUFFER_SIZE, "");
+            registered = 1;
         }
 
+        if (registered){ // on a droit qu'a /nick si on est pas enregistré
+            if ((strcmp(commande, COMMAND_JOIN) == 0) && strlen(user_channel)==0 ) {
+                if ((strlen(text) -1) != strlen(commande)) {
+                    snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
+                }
+            }
+            if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
+                snprintf(user_channel, BUFFER_SIZE, "");
+            }
+        }
 
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
@@ -168,12 +174,12 @@ int main(int argc,char** argv)
         select(sock+1, &fds, NULL, NULL, 0);
 
         if (FD_ISSET(sock, &fds)) { //si la modification est faite sur l'ecoute
-        do_read(sock, text);
+            do_read(sock, text);
+        }
     }
-}
 
-free(text);
-close(sock);
-// nonblock(NB_DISABLE);
-return 0;
+    free(text);
+    close(sock);
+    // nonblock(NB_DISABLE);
+    return 0;
 }

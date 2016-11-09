@@ -140,15 +140,15 @@ int remove_client(Client * liste_clients, int i, int compteur){
     int w = k;
 
     for (k; k < compteur -1; k++) { //jusqu'a compteur -1 car on suppr une personne
-    if (k == i) {
+        if (k == i) {
+            w++;
+            free(liste_clients[i].pseudo);
+        }
+        liste_clients[k] = liste_clients[w];
         w++;
-        free(liste_clients[i].pseudo);
     }
-    liste_clients[k] = liste_clients[w];
-    w++;
-}
 
-return --compteur;
+    return --compteur;
 }
 
 /*
@@ -307,19 +307,19 @@ int main(int argc, char** argv){
 
                     if (strlen(message.buffer) != 0) { //evite le double select et le cas ou l'utilisateur envoie rien
 
-                    printf("Entrée : %s", message.buffer);
+                        printf("Entrée : %s", message.buffer);
 
-                    if (do_commande(&message, retour_client, liste_clients, i, &compteur, &readfds2)) {
-                        printf("Sortie : %s\n", message.buffer);
-                        do_send(message, liste_clients, compteur); //repond
+                        if (do_commande(&message, retour_client, liste_clients, i, &compteur, &readfds2)) {
+                            printf("Sortie : %s\n", message.buffer);
+                            do_send(message, liste_clients, compteur); //repond
+                        }
+                        break;
                     }
-                    break;
                 }
             }
         }
+        a++;
     }
-    a++;
-}
 
-clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
+    clear_clients(liste_clients, compteur); //on suprime tout si on ferme le serveur
 }
