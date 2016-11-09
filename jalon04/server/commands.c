@@ -37,7 +37,6 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
             liste_clients[i].pseudo = (char *)malloc(strlen(argument) * sizeof(char));
         }
 
-
         // vérifie que le pseudo n'est pas déja utilisé
         for (k = i; k < compteur; k++) {  // On commence à i car  le client 2 peut mettre son nom avant le client 1. si on commence à 0 => core dump
             if(strcmp(argument,liste_clients[k].pseudo) == 0) {
@@ -63,10 +62,6 @@ int commande_nick(char * commande, char ** copy_buffer, Client * liste_clients, 
 }
 
 
-
-/*
-Pas d'export
-*/
 void commande_who(Client * liste_clients, int compteur, Message * message){
     int i = 0;
     memset(message->buffer, 0, BUFFER_SIZE);
@@ -75,9 +70,9 @@ void commande_who(Client * liste_clients, int compteur, Message * message){
         strcat(message->buffer, liste_clients[i].pseudo);
         strcat(message->buffer, "\'\n");
     }
-
     message->destination = no_one;
 }
+
 
 void display_time(time_t connection_date, char * date){
     struct tm temps = *localtime(&connection_date);
@@ -85,11 +80,8 @@ void display_time(time_t connection_date, char * date){
     puts(date);
 }
 
-/*
-Pas a exporter
-*/
-void commande_whois(char * commande,Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
 
+void commande_whois(char * commande,Client * liste_clients, int compteur, char * buffer, char ** copy_buffer){
 
     if ((strlen(buffer) -1)==strlen(commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /whois)
         snprintf(buffer, BUFFER_SIZE, "Entrez la commande %s [pseudo] \n",COMMAND_WHOIS);
@@ -116,9 +108,6 @@ void commande_whois(char * commande,Client * liste_clients, int compteur, char *
 }
 
 
-/*
-Pas a exporter
-*/
 void commande_help(Message * message){
     memset(message->buffer, 0, BUFFER_SIZE);
     snprintf(message->buffer, BUFFER_SIZE, "\nCommandes diponibles :\n"
@@ -135,12 +124,9 @@ void commande_help(Message * message){
     message->destination = no_one;
 }
 
-/*
-Pas a exporter
-*/
+
 void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clients, int compteur, char * sender_name){
     char * argument = strsep(copy_buffer, " ");
-
     memset(message->buffer, 0, BUFFER_SIZE);
 
     int i = 0;
@@ -159,13 +145,18 @@ void commande_whisp(char ** copy_buffer, Message * message, Client * liste_clien
         snprintf(message->buffer, BUFFER_SIZE, "%s[%s] : %s\n%s", TEXT_COLOR_MAGENTA,sender_name, *copy_buffer, TEXT_COLOR_RESET); //supprime la commande et l'argument du message a transmettre
     } else {
         message->destination = no_one; //on renvoie un message d'erreur
-
         snprintf(message->buffer, BUFFER_SIZE, "/!\\ utilisateur non trouvé !\n"); //supprime la commande et l'argument du message a transmettre
     }
 }
 
 
-void commande_join_channel(char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
+void commande_join_channel(char * commande,char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
+
+    if ((strlen(message->buffer) -1)==strlen(commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
+            snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n",COMMAND_JOIN);
+            return;
+        }
+
     if (liste_clients[i].channel != NULL) { //si on es deja dans une channel
         message->destination = no_one;
         snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez quitter le salon en 1er !\n" TEXT_COLOR_RESET);
@@ -205,9 +196,7 @@ snprintf(message->buffer, BUFFER_SIZE, "Sortie du salon\n");
 
 
 
-/*
-A exporter ça ^^
-*/
+//Controleur des commandes
 int do_commande(Message * message, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
     int salon;
     char * commande = message->buffer;
@@ -254,14 +243,10 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         } else if (strcmp(commande, COMMAND_WHISP) == 0) {
             commande_whisp(&copy_buffer, message, liste_clients, *compteur, liste_clients[i].pseudo);
 
-            //
-
-            // } else if (strcmp(commande, COMMAND_CREATE) == 0){
-            //     salon=commande_create(&copy_buffer, liste_clients,i,message->buffer,*compteur);
         } else if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0){
             commande_quit_channel(liste_clients, i, message);
         } else if (strcmp(commande, COMMAND_JOIN) == 0){
-            commande_join_channel(&copy_buffer,liste_clients, i, *compteur, message);
+            commande_join_channel(commande,&copy_buffer,liste_clients, i, *compteur, message);
 
 
         } else { //aucune commande

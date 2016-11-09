@@ -122,7 +122,7 @@ int main(int argc,char** argv)
             read(STDIN_FILENO, text, BUFFER_SIZE);
 
 
-            if (strcmp(text, "/q\n\0") == 0) {
+            if (strcmp(text, "/quit\n\0") == 0) {
                 while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
                     perror("erreur lors de l'envoie");
                 }

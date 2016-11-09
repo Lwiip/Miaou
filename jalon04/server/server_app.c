@@ -224,8 +224,6 @@ int main(int argc, char** argv){
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
     int max = lst_sock;
 
-
-
     /*
     Debut code
     */
@@ -279,8 +277,6 @@ int main(int argc, char** argv){
             } else {
                 max=max;
             }
-
-
 
             //ajout de la nouvelle socket client a l'ecoute
             FD_SET(rep_sock, &readfds2);
