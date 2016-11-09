@@ -283,6 +283,7 @@ int main(int argc, char** argv){
 
 
             liste_clients[compteur].lst_sock = rep_sock; //sauvegarde du client
+            liste_clients[compteur].pseudo = "";
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
             liste_clients[compteur].channel = NULL; //dans aucune channel par def
