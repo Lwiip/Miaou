@@ -10,6 +10,7 @@ Channel * channel_create(char * name_channel){
 }
 
 void channel_destroy(Channel * channel){
+	printf("Destruction du salon\n");
 	free(channel);
 }
 

@@ -5,9 +5,9 @@
 
 int check_commande_arg(char * buffer, char * commande){
     if ((strlen(buffer) -1)==strlen(commande)) {
-        return FALSE;
+        return TRUE;
     }
-    return TRUE;
+    return FALSE;
 }
 
 /*
@@ -18,7 +18,7 @@ int commande_quit(char * commande, int retour_client, Client * liste_clients, in
         printf("Deconnection du client\n");
         close(liste_clients[i].lst_sock);
         FD_CLR(liste_clients[i].lst_sock, readfds); //enlève le client de l'ecoute
-        *compteur = remove_client(liste_clients, i, *compteur); //met notre client a zero
+        *compteur = remove_client(liste_clients, i, *compteur); //met notre client a zero        
         return 1; //on a bien fait un /q
     } else {
         return 0; //on n'a pas fait un /q
@@ -165,7 +165,7 @@ void commande_whisp(char * commande, char ** copy_buffer, Message * message, Cli
 void commande_join_channel(char * commande,char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
 
     if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
-            snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n",COMMAND_JOIN);
+            snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n", COMMAND_JOIN);
             return;
         }
 
