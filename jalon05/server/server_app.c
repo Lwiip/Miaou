@@ -10,7 +10,6 @@
 
 #include <string.h>
 #include <unistd.h>
-#include <netinet/in.h> //pour gerer l'ip
 #include <string.h>
 #include <time.h>
 
@@ -24,52 +23,6 @@ void init_message(Message * message){
 void free_message(Message * message){
     free(message->buffer);
     free(message->dest_name);
-}
-
-void init_serv_addr(int port, struct sockaddr_in * serv_addr) {
-
-    //clean the serv_add structure
-    memset(serv_addr, 0, sizeof(serv_addr));
-
-    //cast the port from a string to an int
-    //portno = atoi(port); osef car on a mis dans une constante ici coté serveur
-
-    //internet family protocol
-    serv_addr->sin_family = AF_INET;
-
-    //we bind to any ip form the host
-    serv_addr->sin_addr.s_addr = htonl(INADDR_ANY);
-
-    //we bind on the tcp port specified
-    serv_addr->sin_port = htons(port);
-
-}
-
-void do_bind(int sock, struct sockaddr_in adr){
-
-    int retour = bind(sock, (struct sockaddr *) &adr, sizeof(adr));
-    if( retour == -1 ) {
-        printf("%i\n",errno );
-        perror("erreur lors du bind");
-    }
-}
-
-void do_listen(int sock){
-    if( listen( sock, SOMAXCONN) == -1 ) {
-        perror("erreur lors de l'ecoute");
-        exit(EXIT_FAILURE);
-    }
-}
-
-int do_accept(int sock, struct sockaddr_in * adr){
-    int addrlen=sizeof(adr);
-    int new_sock=accept(sock, (struct sockaddr *) &adr,&addrlen);
-    if(new_sock==-1)
-    printf("Desole, je ne peux pas accepter la session TCP\n");
-    else
-    printf("connection      : OK\n");
-    return new_sock;
-
 }
 
 int do_read(Message * message){
@@ -287,6 +240,8 @@ int main(int argc, char** argv){
             liste_clients[compteur].registered = 0; //le client n'est pas encore enregistre
             liste_clients[compteur].connection_date = time(NULL);
             liste_clients[compteur].channel = NULL; //dans aucune channel par def
+            liste_clients[compteur].etat_transfert = FALSE;
+            liste_clients[compteur].transfert = NULL;
             get_ip_port_client(rep_sock, liste_clients, compteur);
 
             printf("%s %i\n", liste_clients[compteur].ip, liste_clients[compteur].port);

@@ -1,3 +1,2 @@
 - Fermer plus proprement les sockets car on a tjr le port qui s'increment :/
-- on a un pb lors d'un identification croisée
-- /who fait crasher le client, et seulement le client (surment un pb e l'envoie) 
+- Reporter les modif faites dans jalon 04 dans jalon 05

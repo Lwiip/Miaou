@@ -11,4 +11,10 @@
 #include "../commons/config.h"
 
 
+typedef struct $
+{
+	int sender_mode;
+	char file[BUFFER_SIZE];
+}Transfert_client;
+
 #endif

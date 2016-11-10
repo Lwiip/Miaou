@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netdb.h>
+#include <pthread.h>
+
 
 #include "client.h"
 #include "commands.h"
@@ -41,27 +43,257 @@ int read_line(char *text){
     }
 }
 
-void do_read(int sock, char * text){
-    memset(text, 0, BUFFER_SIZE); //On s'assure que text vaut rien
-    int length_r_buff = recv(sock, text, strlen(text) - 1, 0);
+void * serveur_client(char * file){
+    /*INITIALISATION*/
+    struct sockaddr_in serv_addr;
+    int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
-    //gere l'erreur, si pas afficher le message
-    if (0 >= length_r_buff) {
-        perror("erreur lors de la reception");
-        printf("serveur crash\n");
-        exit(0);
-    } else {
-        text[length_r_buff] = '\0';
-        printf("%c[2K", 27); // efface la ligne dans la console
-        fputs(text, stdout);
+
+    /*CODE*/
+    //init the serv_add structure
+    init_serv_addr(PORT_SERVEUR_CLIENT, &serv_addr);
+
+    //perform the binding
+    //we bind on the tcp port specified
+    do_bind(lst_sock, serv_addr);
+
+    //specify the socket to be a server socket and listen for at most 20 concurrent client
+    do_listen(lst_sock);
+
+
+
+    for (;;)
+    {
+        //accept connection from client
+        int rep_sock=do_accept(lst_sock,&serv_addr);
+
+        //RECEPTION DU FICHIER ICI
+        printf("Reception du fichier...\n");
+
+        char recv_buff[CHUNK_SIZE_RECEP]; 
+        strcpy(file, "./sortie.txt");
+        FILE * fp = fopen(file, "w+");
+        if(fp == NULL){
+            printf("Le fichier ne peut etre creer\n");
+        } else {
+            // char file_data[CHUNK_SIZE_RECEP];
+
+            // int nbytes = 0;
+            // while ( (nbytes = fread(file_data, sizeof(char), CHUNK_SIZE_RECEP)) > 0){
+            //     int offset = 0;
+            //     while ((sent = send(client, file_data + offset, nbytes, 0)) > 0 || (sent == -1 && errno == EINTR) ){
+            //         if (sent > 0){
+            //             offset += sent;
+            //             nbytes -= sent;
+            //         }   
+            //     }
+            // }
+
+            memset(recv_buff, 0, CHUNK_SIZE_RECEP);
+            int length_r_buff = 1;
+            int success = 0;
+            while(success == 0)
+            {
+                while(length_r_buff)
+                {
+                    length_r_buff = recv(rep_sock, recv_buff, CHUNK_SIZE_RECEP, MSG_PEEK | MSG_DONTWAIT);
+                    if(length_r_buff < 0)
+                    {
+                        printf("Echec reception du fichier\n");
+                        break;
+                    } else if(!length_r_buff){
+                        break;
+                    }
+                    int write_sz = fwrite(recv_buff, sizeof(char), length_r_buff, fp);
+                    if(write_sz < length_r_buff)
+                    {
+                        printf("Echec ecriture du fichier\n");
+                        break;
+                    }
+                    bzero(recv_buff, CHUNK_SIZE_RECEP);
+                }
+                printf("Fichier reçu !\n");
+                success = 1;
+            }
+        }
+        fclose(fp);
+            
+
+
+
+
+
+
+
+
+
+
+
+
+
+        //clean up client socket
+        int ret = close(rep_sock);
+        if (ret == -1) {
+            printf("erreur lors de la fermeture de rep_sock\n");
+        }
+    }
+
+    //clean up server socket
+    int ret = close(lst_sock);
+    if (ret == -1) {
+        printf("erreur lors de la fermeture de lst_sock\n");
     }
 }
 
-handle_client_message(int sock, char * text){
-    //envoie des messages et gere l'erreur
-    do_write(sock, text);
-    //ecoute le message
-    do_read(sock, text);
+void * envoie_fichier_client(char * file){
+
+    struct sockaddr_in sock_host;
+    int sock;
+
+
+    //get the socket
+    sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+
+    //connect to remote socket
+    sock_host = do_connect(sock, sock_host, "127.0.0.1", PORT_SERVEUR_CLIENT);
+
+    
+    //ENVOIE DU FICHIER ICI
+    char send_buff[CHUNK_SIZE_RECEP]; // buffer d'envoie de meme taille que celui de recep
+    printf("Envoie du fichier...\n");
+    FILE *fp = fopen(file, "r");
+    if(fp == NULL)
+    {
+        printf("Echec de l'ouverture du fichier");
+        exit(1);
+    }
+    memset(send_buff, 0, CHUNK_SIZE_RECEP);
+    int length_s_buff;
+    int sent;
+    int nbytes;
+
+    while((length_s_buff = fread(send_buff, sizeof(char), CHUNK_SIZE_RECEP, fp)) > 0){
+        int offset = 0;
+        while ((sent = send(sock, send_buff + offset, length_s_buff, 0)) > 0 || (sent == -1 && errno == EINTR) ) {
+                if (sent > 0) {
+                    offset += sent;
+                    nbytes -= sent;
+                }
+        }
+        bzero(send_buff, CHUNK_SIZE_RECEP);
+    }
+    close(sock);
+    printf("Transfert fini\n");
+}
+
+void * init_reception(void * file_serialized){
+    char * file = (char *)file_serialized;
+    return serveur_client(file);
+}
+
+void * init_envoie(void * file_serialized){
+    char * file = (char *)file_serialized;
+    return envoie_fichier_client(file);
+}
+
+void do_read(int sock, char * text, Transfert_client * transfert_client){
+    void * data = malloc(2 * BUFFER_SIZE);
+
+    int length_r_buff = recv(sock, data, 2 * BUFFER_SIZE, 0);
+
+    TRY{
+        // length_r_buff = recv(sock, (Transfert *)&transfert, sizeof(transfert), 0);
+        if (length_r_buff == 2 *BUFFER_SIZE){ //l'astuce est la, le serveur renvoie une taille se sizeod(transfert) +BUFFER_SIZE donc si on a BUFFER non lu c'etait une donnée de transfert, car nos str sont lim a BUFFER_SIZE
+            printf(">>>>>>>>>>\n");
+            if (transfert_client->sender_mode){
+                // alors c'est nous qui envoyons
+                printf("envoiiiie\n");
+
+                pthread_t tid_send;
+                pthread_create(&tid_send, NULL, init_envoie, (void *)&(transfert_client->file ));
+
+            } else {
+                // on recois
+                printf("recoiss\n");
+
+                pthread_t tid_recv;
+                pthread_create(&tid_recv, NULL, init_reception, (void *)&(transfert_client->file ));
+                
+            }
+
+            free(data);
+            transfert_client->sender_mode = FALSE;
+            return;
+        }
+        
+    } CATCH {
+        printf("on est passé dans le catch (enlever ce print)\n");
+    }END_TRY;
+
+
+    if (length_r_buff != BUFFER_SIZE){
+        memset(text, 0, BUFFER_SIZE); //On s'assure que text vaut rien
+        // length_r_buff = recv(sock, text, strlen(text) - 1, 0);
+        text = (char *)data;
+
+        //gere l'erreur, si pas afficher le message
+        if (0 >= length_r_buff) {
+            perror("erreur lors de la reception");
+            printf("serveur crash\n");
+            exit(0);
+        } else {
+            text[length_r_buff] = '\0';
+            printf("%c[2K", 27); // efface la ligne dans la console
+            fputs(text, stdout);
+        }
+    }
+    free(data);
+}
+
+int client_commande(char * text, char * user_name, int * registered, char * user_channel, Transfert_client * transfert_client){
+    char local_copy_text[BUFFER_SIZE];
+    char * copy_text = local_copy_text;
+    strcpy(copy_text, text);
+
+    char * commande = strsep(&copy_text, " ");
+
+    if (copy_text != NULL) { //si le texte envoyé ne contenait pas de commande (cas dans un salon)
+        copy_text[strlen(copy_text) - 1] = '\0';
+    } else {
+        commande[strlen(commande) - 1] = '\0';
+    }
+
+    
+    if (strcmp(commande, COMMAND_NICK) == 0) {
+        snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
+        *registered = 1;
+    }
+
+    if (strcmp(commande, COMMAND_SEND) == 0){
+        char * user_dest_name = strsep(&copy_text, " ");
+        char * file_location = strsep(&copy_text, " ");
+        char out[BUFFER_SIZE];
+        replace_str(file_location, "\"", "", out);
+
+        if (0 != access(out, 0)){  // si le fichier n'existe pas
+            printf(TEXT_COLOR_RED "Le fichier est introuvable\n" TEXT_COLOR_RESET);
+            return FALSE; //on ne veux pas rentrer dans le send
+        }
+        transfert_client->sender_mode = TRUE;
+        strcpy(transfert_client->file, out);
+    }
+
+    if (*registered){ // on a droit qu'a /nick si on est pas enregistré
+        if ((strcmp(commande, COMMAND_JOIN) == 0) && strlen(user_channel)==0 ) {
+            if ((strlen(text) -1) != strlen(commande)) {
+                snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
+            }
+        }
+        if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
+            snprintf(user_channel, BUFFER_SIZE, "");
+        }
+    }
+    return TRUE;
 }
 
 int main(int argc,char** argv)
@@ -88,6 +320,8 @@ int main(int argc,char** argv)
     strcpy(user_name, ""); //met le nom vide
     int registered = 0;
 
+    Transfert_client transfert_client;
+    transfert_client.sender_mode = FALSE; //on n'envoie pas de fichier par def
 
     char user_channel[BUFFER_SIZE];
     strcpy(user_channel, ""); //met le nom de channel vide
@@ -108,6 +342,8 @@ int main(int argc,char** argv)
     FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
     FD_SET(sock, &fds);
 
+    int envoie;
+
     for(;; ) {
         // FD_ZERO(&fds);
         // FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
@@ -122,6 +358,7 @@ int main(int argc,char** argv)
             // fgets(text, BUFFER_SIZE, stdin);
             read(STDIN_FILENO, text, BUFFER_SIZE);
 
+           envoie = client_commande(text, user_name, &registered, user_channel, &transfert_client);
 
             if (strcmp(text, "/quit\n\0") == 0) {
                 while(-1 == send(sock, text, BUFFER_SIZE, 0)) {
@@ -133,48 +370,23 @@ int main(int argc,char** argv)
 
             // send message to the server
             // handle_client_message(sock, text);
-            do_write(sock, text);
-        }
-
-        char local_copy_text[BUFFER_SIZE];
-        char * copy_text = local_copy_text;
-        strcpy(copy_text, text);
-
-        char * commande = strsep(&copy_text, " ");
-
-        if (copy_text != NULL) { //si le texte envoyé ne contenait pas de commande (cas dans un salon)
-            copy_text[strlen(copy_text) - 1] = '\0';
-        } else {
-            commande[strlen(commande) - 1] = '\0';
+            if (envoie){
+                do_write(sock, text);
+            }
         }
 
         
-        if (strcmp(commande, COMMAND_NICK) == 0) {
-            snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
-            registered = 1;
-        }
-
-        if (registered){ // on a droit qu'a /nick si on est pas enregistré
-            if ((strcmp(commande, COMMAND_JOIN) == 0) && strlen(user_channel)==0 ) {
-                if ((strlen(text) -1) != strlen(commande)) {
-                    snprintf(user_channel, BUFFER_SIZE, TEXT_COLOR_GREEN " [ %s ]" TEXT_COLOR_RESET, copy_text);
-                }
-            }
-            if (strcmp(commande, COMMAND_QUIT_CHANNEL) == 0) {
-                snprintf(user_channel, BUFFER_SIZE, "");
-            }
-        }
 
         FD_ZERO(&fds);
         FD_SET(STDIN_FILENO, &fds); //STDIN_FILENO is 0
         FD_SET(sock, &fds);
         printf("%s%s > ", user_name, user_channel);
-        fflush(stdout);
+        fflush(stdout); //force le printf
 
         select(sock+1, &fds, NULL, NULL, 0);
 
         if (FD_ISSET(sock, &fds)) { //si la modification est faite sur l'ecoute
-            do_read(sock, text);
+            do_read(sock, text, &transfert_client);
         }
     }
 

@@ -8,6 +8,12 @@ typedef struct{
     int nb_client;
 }Channel;
 
+typedef struct{
+	char file[BUFFER_SIZE];
+	int sock_sender;
+	int sock_recv;
+}Transfert;
+
 typedef struct
 {
 
@@ -17,6 +23,9 @@ typedef struct
 	time_t connection_date;
 	char ip[INET_ADDRSTRLEN];
 	int port;
+
+	int etat_transfert; //-1 en attente de confirmation 0 pas de transfert, 1 envoie 2 recois 3 on ne veut pas	
+	Transfert * transfert;
 
 	Channel * channel; //null si dans aucune
 

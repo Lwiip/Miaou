@@ -56,6 +56,8 @@ int main ()
         /* Child process */
         if(!fork())
         {
+            int sent;
+            int nbytes;
             char* f_name = "send.txt";
             char sdbuf[LENGTH]; // Send buffer
             printf("[server] send %s to the client...", f_name);

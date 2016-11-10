@@ -1,13 +1,15 @@
 #include <time.h> //juste dans le .c
+#include <unistd.h>
+#include <libgen.h> //pour le basename
 
 #include "commands.h"
 
 
 int check_commande_arg(char * buffer, char * commande){
     if ((strlen(buffer) -1)==strlen(commande)) {
-        return FALSE;
+        return TRUE;
     }
-    return TRUE;
+    return FALSE;
 }
 
 /*
@@ -131,6 +133,17 @@ void commande_help(Message * message){
     message->destination = no_one;
 }
 
+int check_client_exist(Client * liste_clients,  int compteur, char * pseudo){
+    int i = 0;
+    int exist = FALSE;
+    for (i = 0; i < compteur; ++i) {
+        if (strcmp(liste_clients[i].pseudo, pseudo) == 0) { //si on trouve le destinataire
+            exist = TRUE;
+            break;
+        }
+    }
+    return exist;
+}
 
 void commande_whisp(char * commande, char ** copy_buffer, Message * message, Client * liste_clients, int compteur, char * sender_name){
     if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /whois)
@@ -141,14 +154,7 @@ void commande_whisp(char * commande, char ** copy_buffer, Message * message, Cli
     char * argument = strsep(copy_buffer, " ");
     memset(message->buffer, 0, BUFFER_SIZE);
 
-    int i = 0;
-    int exist = FALSE;
-    for (i = 0; i < compteur; ++i) {
-        if (strcmp(liste_clients[i].pseudo, argument) == 0) { //si on trouve le destinataire
-            exist = TRUE;
-            break;
-        }
-    }
+    int exist = check_client_exist(liste_clients, compteur, argument);
 
     if (exist) {
         message->destination = user;
@@ -162,7 +168,7 @@ void commande_whisp(char * commande, char ** copy_buffer, Message * message, Cli
 }
 
 
-void commande_join_channel(char * commande,char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
+void commande_join_channel(char * commande, char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
 
     if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
             snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n",COMMAND_JOIN);
@@ -206,7 +212,86 @@ int commande_quit_channel(Client * liste_clients, int i, Message * message){
     snprintf(message->buffer, BUFFER_SIZE, "Sortie du salon\n");
 }
 
+void commande_send_file(char * commande, char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
+    if (check_commande_arg(message->buffer, commande)){
+        snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [user] \"ficher/a/envoyer\" \n", COMMAND_SEND);
+        return;
+    }
 
+
+
+    char * user_dest_name = strsep(copy_buffer, " ");
+    char * file_location = strsep(copy_buffer, " ");
+
+    int exist = check_client_exist(liste_clients, compteur, user_dest_name);
+
+    if (!exist){
+        message->destination = no_one;
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Le client est inconnu\n" TEXT_COLOR_RESET);
+        return;
+    }
+
+    int k;
+    for(k = 0; k < compteur; k++){
+        if (strcmp(user_dest_name, liste_clients[k].pseudo) == 0){
+            break; //on a trouvé l'indice
+        }
+    }
+    liste_clients[i].etat_transfert = TRUE; //le client i (qui init le send) veut envoyer un fichier
+    liste_clients[k].etat_transfert = -1; //en attente
+
+    Transfert * transfert = malloc(sizeof(*transfert));
+    transfert->sock_sender = liste_clients[i].lst_sock;
+    transfert->sock_recv = liste_clients[k].lst_sock;
+    strcpy(transfert->file, file_location);
+
+    liste_clients[i].transfert = transfert;
+    liste_clients[k].transfert = transfert;
+
+    char out[BUFFER_SIZE];
+    replace_str(basename(file_location), "\"", "", out);
+    snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_CYAN "%s souhaite vous envoyer le fichier %s. Acceptez vous ? [Y,n]\n" TEXT_COLOR_RESET, liste_clients[i].pseudo, out); //basename renvoie le nom du fichier
+    message->destination = user;
+    message->dest_name = liste_clients[k].pseudo;
+}
+
+void destroy_transfert(Client * liste_clients, int i, int compteur, Message * message){
+    if(liste_clients[i].etat_transfert == 3){ //refusé
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Transfert refusé\n" TEXT_COLOR_RESET);
+    } else if (liste_clients[i].etat_transfert == 2){ //accepté
+        snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_GREEN "Transfert accepté\n" TEXT_COLOR_RESET);
+    }
+
+    int k; //cherche le client qui voulais envoyer
+    for (k = 0; k < compteur; ++k){
+        if (liste_clients[k].lst_sock == (liste_clients[i].transfert)->sock_sender){
+            break;
+        }
+    }
+    message->destination = user;
+    message->dest_name = liste_clients[k].pseudo;
+
+    liste_clients[i].etat_transfert = 0;
+    liste_clients[k].etat_transfert = 0;
+    free(liste_clients[k].transfert);
+    liste_clients[i].transfert = NULL;
+    liste_clients[k].transfert = NULL;
+    printf("Destruction du transfert\n");
+}
+
+void init_transfert(Client * liste_clients, int i, int compteur, Message * message){
+    Transfert * tmp = liste_clients[i].transfert;
+    printf("Envoie de la notif transfert a l'emetteur\n");
+    while(send(tmp->sock_sender, "", 2 * BUFFER_SIZE, 0) == -1) { //astuce on envoie 2 fois plus de donnée que normalement, a la recep on sera que l'on est en transfert
+        perror("erreur envoie\n");
+    }
+
+    printf("Envoie de la notif transfert au recepteur\n");
+    while(send(tmp->sock_recv, "", 2 * BUFFER_SIZE, 0) == -1) {
+        perror("erreur envoie\n");
+    }
+    destroy_transfert(liste_clients, i, compteur, message);
+}
 
 //Controleur des commandes
 int do_commande(Message * message, int retour_client, Client * liste_clients, int i, int * compteur, fd_set * readfds){
@@ -235,6 +320,27 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
         break;
 
     case 1: //si on est enregistre
+
+        /*TRANSFERT */
+        if (liste_clients[i].etat_transfert == 1){
+            return 0; //si on envoie on ne veut pas pouvoir faire d'autre commande
+        }
+
+        if (liste_clients[i].etat_transfert == -1){ //si on est en attente alors il faut choisir si on recoit ou pas
+            if (strcmp(message->buffer, "Y\n") == 0){
+                liste_clients[i].etat_transfert = 2; //on recoit le fichier
+                init_transfert(liste_clients, i, *compteur, message);
+            } else if (strcmp(message->buffer, "n\n") == 0){
+                liste_clients[i].etat_transfert = 3; //on ne veut pas
+                destroy_transfert(liste_clients, i, *compteur, message);
+            } else {
+                snprintf(message->buffer, BUFFER_SIZE, TEXT_COLOR_RED "Veuillez répondre par Y ou n\n" TEXT_COLOR_RESET);
+                message->destination = no_one;
+            }
+            return 1;//on rentre dans le send dans tous les cas
+        }
+        /* FIN TRANSFERT */
+
         if (strcmp(commande, COMMAND_NICK) == 0) {
             if (commande_nick(commande, &copy_buffer, liste_clients, i, message->buffer, 1,*compteur)) {
                 printf("Le client %i a bien été enregistré comme %s\n", liste_clients[i].lst_sock, liste_clients[i].pseudo );
@@ -259,6 +365,10 @@ int do_commande(Message * message, int retour_client, Client * liste_clients, in
             commande_quit_channel(liste_clients, i, message);
         } else if (strcmp(commande, COMMAND_JOIN) == 0){
             commande_join_channel(commande,&copy_buffer,liste_clients, i, *compteur, message);
+
+
+        } else if (strcmp(commande, COMMAND_SEND) == 0){
+            commande_send_file(commande, &copy_buffer, liste_clients, i, *compteur, message);
 
 
         } else { //aucune commande
