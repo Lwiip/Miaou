@@ -8,6 +8,8 @@
 #include <netdb.h>
 #include <pthread.h>
 
+#include <libgen.h> //pour basename
+
 
 #include "client.h"
 #include "commands.h"
@@ -43,7 +45,7 @@ int read_line(char *text){
     }
 }
 
-void * serveur_client(char * file){
+void * serveur_client(char * file_name){
     /*INITIALISATION*/
     struct sockaddr_in serv_addr;
     int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -60,92 +62,68 @@ void * serveur_client(char * file){
     //specify the socket to be a server socket and listen for at most 20 concurrent client
     do_listen(lst_sock);
 
+    //accept connection from client
+    int rep_sock=do_accept(lst_sock,&serv_addr);
+
+    //RECEPTION DU FICHIER ICI
+    printf("Reception du fichier...\n");
+
+    char recv_buff[CHUNK_SIZE_RECEP];
+    char file[CHUNK_SIZE_RECEP];
+    snprintf(file, CHUNK_SIZE_RECEP, "%s%s", SAVE_LOCATION, file_name);
+    printf("%s\n", file);
+
+    FILE * fp = fopen(file, "w+");
+    if(fp == NULL){
+        printf("Le fichier ne peut etre creer\n");
+    } else {
 
 
-    for (;;)
-    {
-        //accept connection from client
-        int rep_sock=do_accept(lst_sock,&serv_addr);
-
-        //RECEPTION DU FICHIER ICI
-        printf("Reception du fichier...\n");
-
-        char recv_buff[CHUNK_SIZE_RECEP]; 
-        strcpy(file, "./sortie.txt");
-        FILE * fp = fopen(file, "w+");
-        if(fp == NULL){
-            printf("Le fichier ne peut etre creer\n");
-        } else {
-            // char file_data[CHUNK_SIZE_RECEP];
-
-            // int nbytes = 0;
-            // while ( (nbytes = fread(file_data, sizeof(char), CHUNK_SIZE_RECEP)) > 0){
-            //     int offset = 0;
-            //     while ((sent = send(client, file_data + offset, nbytes, 0)) > 0 || (sent == -1 && errno == EINTR) ){
-            //         if (sent > 0){
-            //             offset += sent;
-            //             nbytes -= sent;
-            //         }   
-            //     }
-            // }
-
-            memset(recv_buff, 0, CHUNK_SIZE_RECEP);
-            int length_r_buff = 1;
-            int success = 0;
-            while(success == 0)
+        memset(recv_buff, 0, CHUNK_SIZE_RECEP);
+        int length_r_buff = 1;
+        int success = 0;
+        int i =0;
+        while(success == 0)
+        {
+            while(length_r_buff)
             {
-                while(length_r_buff)
+                i++;
+                printf("%i\n", i);
+                length_r_buff = recv(rep_sock, recv_buff, CHUNK_SIZE_RECEP, MSG_DONTWAIT    );
+                if(length_r_buff < 0)
                 {
-                    length_r_buff = recv(rep_sock, recv_buff, CHUNK_SIZE_RECEP, MSG_PEEK | MSG_DONTWAIT);
-                    if(length_r_buff < 0)
-                    {
-                        printf("Echec reception du fichier\n");
-                        break;
-                    } else if(!length_r_buff){
-                        break;
-                    }
-                    int write_sz = fwrite(recv_buff, sizeof(char), length_r_buff, fp);
-                    if(write_sz < length_r_buff)
-                    {
-                        printf("Echec ecriture du fichier\n");
-                        break;
-                    }
-                    bzero(recv_buff, CHUNK_SIZE_RECEP);
+                    printf("Echec reception du fichier\n");
+                    break;
+                } else if(!length_r_buff){
+                    break;
                 }
-                printf("Fichier reçu !\n");
-                success = 1;
+                int write_sz = fwrite(recv_buff, sizeof(char), strlen(recv_buff), fp);
+                
+                bzero(recv_buff, CHUNK_SIZE_RECEP);
             }
+            printf("Fichier reçu !\n");
+            success = 1;
         }
-        fclose(fp);
-            
+    }
+    fclose(fp);
 
-
-
-
-
-
-
-
-
-
-
-
-
-        //clean up client socket
-        int ret = close(rep_sock);
-        if (ret == -1) {
-            printf("erreur lors de la fermeture de rep_sock\n");
-        }
+    //clean up client socket
+    int ret = close(rep_sock);
+    if (ret == -1) {
+        printf("erreur lors de la fermeture de rep_sock\n");
     }
 
     //clean up server socket
-    int ret = close(lst_sock);
+    ret = close(lst_sock);
     if (ret == -1) {
         printf("erreur lors de la fermeture de lst_sock\n");
     }
 }
 
-void * envoie_fichier_client(char * file){
+void * envoie_fichier_client(char * file, char * ip){
+
+    sleep(5);
+    printf("depart !!!!!!\n");
 
     struct sockaddr_in sock_host;
     int sock;
@@ -155,12 +133,13 @@ void * envoie_fichier_client(char * file){
     sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
 
     //connect to remote socket
-    sock_host = do_connect(sock, sock_host, "127.0.0.1", PORT_SERVEUR_CLIENT);
+    sock_host = do_connect(sock, sock_host, ip, PORT_SERVEUR_CLIENT);
 
     
     //ENVOIE DU FICHIER ICI
     char send_buff[CHUNK_SIZE_RECEP]; // buffer d'envoie de meme taille que celui de recep
     printf("Envoie du fichier...\n");
+    printf("%s\n", file);
     FILE *fp = fopen(file, "r");
     if(fp == NULL)
     {
@@ -172,7 +151,11 @@ void * envoie_fichier_client(char * file){
     int sent;
     int nbytes;
 
+    int i=0;
+
     while((length_s_buff = fread(send_buff, sizeof(char), CHUNK_SIZE_RECEP, fp)) > 0){
+        i++;
+        printf("%i\n", i);
         int offset = 0;
         while ((sent = send(sock, send_buff + offset, length_s_buff, 0)) > 0 || (sent == -1 && errno == EINTR) ) {
                 if (sent > 0) {
@@ -187,13 +170,14 @@ void * envoie_fichier_client(char * file){
 }
 
 void * init_reception(void * file_serialized){
-    char * file = (char *)file_serialized;
-    return serveur_client(file);
+    return serveur_client((char *)file_serialized);
 }
 
-void * init_envoie(void * file_serialized){
-    char * file = (char *)file_serialized;
-    return envoie_fichier_client(file);
+void * init_envoie(void * transfert_serialized){
+    Transfert_client * transfert = (Transfert_client *)transfert_serialized;
+    printf("qqqqqqqqqqq%s\n", transfert->file);
+    printf("ooooooooooo%s\n", transfert->ip);
+    return envoie_fichier_client(transfert->file, transfert->ip);
 }
 
 void do_read(int sock, char * text, Transfert_client * transfert_client){
@@ -209,15 +193,22 @@ void do_read(int sock, char * text, Transfert_client * transfert_client){
                 // alors c'est nous qui envoyons
                 printf("envoiiiie\n");
 
+                snprintf(transfert_client->ip, BUFFER_SIZE, "%s", (char *)data);
+                printf("%s\n", transfert_client->ip);
+                printf("%s\n", transfert_client->file);
+                printf("%i\n", transfert_client->sender_mode);
+
                 pthread_t tid_send;
-                pthread_create(&tid_send, NULL, init_envoie, (void *)&(transfert_client->file ));
+                pthread_create(&tid_send, NULL, init_envoie, (void *)transfert_client);
 
             } else {
                 // on recois
                 printf("recoiss\n");
-
+                char file[BUFFER_SIZE];
+                snprintf(file, BUFFER_SIZE, "%s", (char *)data);
+                printf("<<<<<<>>>>>%s\n", file);
                 pthread_t tid_recv;
-                pthread_create(&tid_recv, NULL, init_reception, (void *)&(transfert_client->file ));
+                pthread_create(&tid_recv, NULL, init_reception, (void *)file);
                 
             }
 

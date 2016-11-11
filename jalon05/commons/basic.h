@@ -35,7 +35,6 @@
 #define TEXT_COLOR_RESET	"\x1b[0m"
 
 
-
 void do_write(int sockfd, char* text);
 
 int do_socket(int domain, int type, int protocol);

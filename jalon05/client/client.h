@@ -10,11 +10,12 @@
 #include "../commons/basic.h"
 #include "../commons/config.h"
 
-
-typedef struct $
+typedef struct
 {
 	int sender_mode;
 	char file[BUFFER_SIZE];
+	char ip[BUFFER_SIZE];
 }Transfert_client;
+
 
 #endif

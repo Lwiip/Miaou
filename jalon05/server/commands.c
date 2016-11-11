@@ -281,13 +281,17 @@ void destroy_transfert(Client * liste_clients, int i, int compteur, Message * me
 
 void init_transfert(Client * liste_clients, int i, int compteur, Message * message){
     Transfert * tmp = liste_clients[i].transfert;
-    printf("Envoie de la notif transfert a l'emetteur\n");
-    while(send(tmp->sock_sender, "", 2 * BUFFER_SIZE, 0) == -1) { //astuce on envoie 2 fois plus de donnée que normalement, a la recep on sera que l'on est en transfert
+
+    printf("Envoie de la notif transfert a l'emetteur\n"); //on envoie l'ip du client qui recois pour pourvoir se connecter
+    while(send(tmp->sock_sender, liste_clients[i].ip, 2 * BUFFER_SIZE, 0) == -1) { //astuce on envoie 2 fois plus de donnée que normalement, a la recep on sera que l'on est en transfert
         perror("erreur envoie\n");
     }
 
+
+    char file_name[BUFFER_SIZE];
+    replace_str(tmp->file, "\"", "", file_name);
     printf("Envoie de la notif transfert au recepteur\n");
-    while(send(tmp->sock_recv, "", 2 * BUFFER_SIZE, 0) == -1) {
+    while(send(tmp->sock_recv, basename(file_name), 2 * BUFFER_SIZE, 0) == -1) {
         perror("erreur envoie\n");
     }
     destroy_transfert(liste_clients, i, compteur, message);

@@ -10,6 +10,7 @@
 
 #define PORT_SERVEUR_CLIENT 4242
 #define CHUNK_SIZE_RECEP 1024
+static const char SAVE_LOCATION[] = "./download/";
 
 //les commandes du serveur (custom maggle !)
 static const char COMMAND_QUIT[] = 	"/q";
