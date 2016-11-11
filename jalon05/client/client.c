@@ -220,6 +220,13 @@ void do_read(int sock, char * text, Transfert_client * transfert_client){
     free(data);
 }
 
+int check_commande_arg(char * buffer, char * commande){
+    if ((strlen(buffer) -1)==strlen(commande)) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
 int client_commande(char * text, char * user_name, int * registered, char * user_channel, Transfert_client * transfert_client){
     char local_copy_text[BUFFER_SIZE];
     char * copy_text = local_copy_text;
@@ -235,12 +242,26 @@ int client_commande(char * text, char * user_name, int * registered, char * user
 
     
     if (strcmp(commande, COMMAND_NICK) == 0) {
-        snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
-        *registered = 1;
+        if ((strlen(text) -1) != strlen(commande)) {
+            snprintf(user_name, BUFFER_SIZE, "%s", copy_text);
+            *registered = 1;
+        }
     }
 
     if (strcmp(commande, COMMAND_SEND) == 0){
+        if (check_commande_arg(text, commande)) {  // Pour éviter le core dump si on a rien mis après la commande
+            printf( "Entrez la commande %s [pseudo] \"File/2/send.txt\"\n", COMMAND_SEND);
+            return FALSE; //on ne rentre pas dans le send
+        }
+
+
         char * user_dest_name = strsep(&copy_text, " ");
+
+        if (copy_text == NULL){
+            printf("Entrez la commande %s [pseudo] \"File/2/send.txt\"\n", COMMAND_SEND);
+            return FALSE;
+        }
+
         char * file_location = strsep(&copy_text, " ");
         char out[BUFFER_SIZE];
         replace_str(file_location, "\"", "", out);

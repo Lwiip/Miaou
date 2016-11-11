@@ -127,8 +127,9 @@ void commande_help(Message * message){
     "\t- %s \t\t\t> envoyer un message a tout le monde\n"
     "\t- %s [pseudo] \t\t> envoyer un message a un client précis\n"
     "\t- %s  \t\t\t> Rejoindre un salon de discussion\n"
-    "\t- %s  \t\t> Quitter votre salon de discussion\n\n",
-    COMMAND_NICK, COMMAND_QUIT, COMMAND_WHO, COMMAND_WHOIS,  COMMAND_ALL, COMMAND_WHISP, COMMAND_JOIN, COMMAND_QUIT_CHANNEL);
+    "\t- %s  \t\t\t> Quitter votre salon de discussion\n\n"
+    "\t- %s [pseudo] \"file/2/send\"\t> Envoyer un fichier a un utilisateur\n\n",
+    COMMAND_NICK, COMMAND_QUIT, COMMAND_WHO, COMMAND_WHOIS,  COMMAND_ALL, COMMAND_WHISP, COMMAND_JOIN, COMMAND_QUIT_CHANNEL, COMMAND_SEND);
 
     message->destination = no_one;
 }
