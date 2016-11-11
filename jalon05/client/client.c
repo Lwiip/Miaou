@@ -71,7 +71,6 @@ void * serveur_client(char * file_name){
     char recv_buff[CHUNK_SIZE_RECEP];
     char file[CHUNK_SIZE_RECEP];
     snprintf(file, CHUNK_SIZE_RECEP, "%s%s", SAVE_LOCATION, file_name);
-    printf("%s\n", file);
 
     FILE * fp = fopen(file, "w+");
     if(fp == NULL){
@@ -82,17 +81,12 @@ void * serveur_client(char * file_name){
         memset(recv_buff, 0, CHUNK_SIZE_RECEP);
         int length_r_buff = 1;
         int success = 0;
-        int i =0;
         while(success == 0)
         {
-            while(length_r_buff)
-            {
-                i++;
-                printf("%i\n", i);
+            while(length_r_buff){
                 length_r_buff = recv(rep_sock, recv_buff, CHUNK_SIZE_RECEP, MSG_DONTWAIT    );
                 if(length_r_buff < 0)
                 {
-                    printf("Echec reception du fichier\n");
                     break;
                 } else if(!length_r_buff){
                     break;
@@ -122,8 +116,7 @@ void * serveur_client(char * file_name){
 
 void * envoie_fichier_client(char * file, char * ip){
 
-    sleep(5);
-    printf("depart !!!!!!\n");
+    sleep(1); //pour s'assurer que le serveur demarre avant le client
 
     struct sockaddr_in sock_host;
     int sock;
@@ -139,7 +132,6 @@ void * envoie_fichier_client(char * file, char * ip){
     //ENVOIE DU FICHIER ICI
     char send_buff[CHUNK_SIZE_RECEP]; // buffer d'envoie de meme taille que celui de recep
     printf("Envoie du fichier...\n");
-    printf("%s\n", file);
     FILE *fp = fopen(file, "r");
     if(fp == NULL)
     {
@@ -151,11 +143,7 @@ void * envoie_fichier_client(char * file, char * ip){
     int sent;
     int nbytes;
 
-    int i=0;
-
     while((length_s_buff = fread(send_buff, sizeof(char), CHUNK_SIZE_RECEP, fp)) > 0){
-        i++;
-        printf("%i\n", i);
         int offset = 0;
         while ((sent = send(sock, send_buff + offset, length_s_buff, 0)) > 0 || (sent == -1 && errno == EINTR) ) {
                 if (sent > 0) {
@@ -175,8 +163,6 @@ void * init_reception(void * file_serialized){
 
 void * init_envoie(void * transfert_serialized){
     Transfert_client * transfert = (Transfert_client *)transfert_serialized;
-    printf("qqqqqqqqqqq%s\n", transfert->file);
-    printf("ooooooooooo%s\n", transfert->ip);
     return envoie_fichier_client(transfert->file, transfert->ip);
 }
 
@@ -188,25 +174,18 @@ void do_read(int sock, char * text, Transfert_client * transfert_client){
     TRY{
         // length_r_buff = recv(sock, (Transfert *)&transfert, sizeof(transfert), 0);
         if (length_r_buff == 2 *BUFFER_SIZE){ //l'astuce est la, le serveur renvoie une taille se sizeod(transfert) +BUFFER_SIZE donc si on a BUFFER non lu c'etait une donnée de transfert, car nos str sont lim a BUFFER_SIZE
-            printf(">>>>>>>>>>\n");
             if (transfert_client->sender_mode){
                 // alors c'est nous qui envoyons
-                printf("envoiiiie\n");
-
                 snprintf(transfert_client->ip, BUFFER_SIZE, "%s", (char *)data);
-                printf("%s\n", transfert_client->ip);
-                printf("%s\n", transfert_client->file);
-                printf("%i\n", transfert_client->sender_mode);
 
                 pthread_t tid_send;
                 pthread_create(&tid_send, NULL, init_envoie, (void *)transfert_client);
 
             } else {
                 // on recois
-                printf("recoiss\n");
                 char file[BUFFER_SIZE];
                 snprintf(file, BUFFER_SIZE, "%s", (char *)data);
-                printf("<<<<<<>>>>>%s\n", file);
+                
                 pthread_t tid_recv;
                 pthread_create(&tid_recv, NULL, init_reception, (void *)file);
                 
