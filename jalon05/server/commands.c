@@ -171,7 +171,7 @@ void commande_whisp(char * commande, char ** copy_buffer, Message * message, Cli
 void commande_join_channel(char * commande, char ** copy_buffer, Client * liste_clients, int i, int compteur, Message * message){
 
     if (check_commande_arg(message->buffer, commande)) {  // Pour éviter le core dump si on a rien mis après la commande (juste /join)
-            snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n",COMMAND_JOIN);
+            snprintf(message->buffer, BUFFER_SIZE, "Entrez la commande %s [nom du salon] \n", COMMAND_JOIN);
             return;
         }
 

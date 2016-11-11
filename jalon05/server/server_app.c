@@ -96,6 +96,9 @@ int remove_client(Client * liste_clients, int i, int compteur){
         if (k == i) {
             w++;
             free(liste_clients[i].pseudo);
+            if (liste_clients[i].channel != NULL){ //si il quitte alors qu'il etait dans une channel
+                channel_rem_subscriber(liste_clients[i].channel);
+            }
         }
         liste_clients[k] = liste_clients[w];
         w++;
