@@ -39,19 +39,20 @@ void init_serv_addr(int port, struct sockaddr_in6 * serv_addr){
 
     //cast the port from a string to an int
     //portno = atoi(port); osef car on a mis dans une constante ici coté serveur
+    serv_addr->sin6_flowinfo = 0;
 
     //internet family protocol
-    serv_addr->sin_family = AF_INET;
+    serv_addr->sin6_family = AF_INET6;
 
     //we bind to any ip form the host
-    serv_addr->sin_addr.s_addr = htonl(INADDR_ANY);
+    serv_addr->sin6_addr = in6addr_any;
 
     //we bind on the tcp port specified
-    serv_addr->sin_port = htons(port);
+    serv_addr->sin6_port = htons(port);
 
 }
 
-void do_bind(int sock, struct sockaddr_in adr){
+void do_bind(int sock, struct sockaddr_in6 adr){
 
     int retour = bind(sock, (struct sockaddr *) &adr, sizeof(adr));
     if( retour == -1 ) {
@@ -67,7 +68,7 @@ void do_listen(int sock){
     }
 }
 
-int do_accept(int sock, struct sockaddr_in * adr){
+int do_accept(int sock, struct sockaddr_in6 * adr){
     int addrlen=sizeof(adr);
     int new_sock=accept(sock, (struct sockaddr *) &adr,&addrlen);
     if(new_sock==-1)

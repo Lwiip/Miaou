@@ -15,13 +15,13 @@
 #include "commands.h"
 // #include "../commons/config.h" pas besoin car cet include est deja dans client.h
 
-struct sockaddr_in do_connect(int sock, struct sockaddr_in sock_host, char* hostname, int port){
+struct sockaddr_in6 do_connect(int sock, struct sockaddr_in6 sock_host, char* hostname, int port){
     //reinitialise la memoire
     memset(&sock_host, 0, sizeof(sock_host));
 
-    sock_host.sin_family = AF_INET6;
-    inet_aton(hostname, &sock_host.sin_addr6);
-    sock_host.sin_port = htons(port);
+    sock_host.sin6_family = AF_INET6;
+    inet_aton(hostname, &sock_host.sin6_addr);
+    sock_host.sin6_port = htons(port);
 
     //check de l'erreur
     if (connect(sock, (struct sockaddr *) &sock_host, sizeof(sock_host)) == -1) {
@@ -48,7 +48,7 @@ int read_line(char *text){
 void * serveur_client(char * file_name){
     /*INITIALISATION*/
     struct sockaddr_in6 serv_addr;
-    int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int lst_sock = do_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
 
     /*CODE*/
@@ -118,12 +118,12 @@ void * envoie_fichier_client(char * file, char * ip){
 
     sleep(1); //pour s'assurer que le serveur demarre avant le client
 
-    struct sockaddr_in sock_host;
+    struct sockaddr_in6 sock_host;
     int sock;
 
 
     //get the socket
-    sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sock = do_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     //connect to remote socket
     sock_host = do_connect(sock, sock_host, ip, PORT_SERVEUR_CLIENT);
@@ -296,7 +296,7 @@ int main(int argc,char** argv)
         return 1;
     }
 
-    struct sockaddr_in sock_host;
+    struct sockaddr_in6 sock_host;
     int sock;
     fd_set fds;
 
@@ -318,7 +318,7 @@ int main(int argc,char** argv)
     strcpy(user_channel, ""); //met le nom de channel vide
 
     //get the socket
-    sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    sock = do_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
 
     //connect to remote socket
     sock_host = do_connect(sock, sock_host, hostname, port);

@@ -10,7 +10,12 @@ make
 cd ..
 
 function client {
-    $(pwd)/build/jalon0$1/RE216_JALON0$1_CLIENT 127.0.0.1 3310
+	if [ $1 != 6 ]
+	then
+    	$(pwd)/build/jalon0$1/RE216_JALON0$1_CLIENT 127.0.0.1 3310
+	else
+		$(pwd)/build/jalon0$1/RE216_JALON0$1_CLIENT ::1 3310
+	fi
 }
 
 function serveur {

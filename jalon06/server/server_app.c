@@ -126,18 +126,18 @@ int get_indice_user(Client * liste_clients, char * client_pseudo, int compteur){
 
 void get_ip_port_client(int rep_sock, Client * liste_clients, int compteur){
 
-    struct sockaddr_in sin;
+    struct sockaddr_in6 sin;
     socklen_t len = sizeof(sin);
 
     if (getpeername(rep_sock, (struct sockaddr *)&sin, &len) == -1) {
         perror("getpeername");
     } else {
-        liste_clients[compteur].port = ntohs(sin.sin_port);
+        liste_clients[compteur].port = ntohs(sin.sin6_port);
     }
 
-    struct sockaddr_in* pV4Addr = (struct sockaddr_in*)&sin;
-    struct in_addr ipAddr = pV4Addr->sin_addr;
-    inet_ntop( AF_INET, &ipAddr, liste_clients[compteur].ip, INET_ADDRSTRLEN );
+    struct sockaddr_in6 * pV6Addr = (struct sockaddr_in6 *)&sin;
+    struct in6_addr ipAddr = pV6Addr->sin6_addr;
+    inet_ntop( AF_INET6, &ipAddr, liste_clients[compteur].ip, INET_ADDRSTRLEN );
 }
 
 
@@ -172,12 +172,12 @@ int main(int argc, char** argv){
 
 
 
-    struct sockaddr_in serv_addr;
+    struct sockaddr_in6 serv_addr;
 
     fd_set readfds;
     fd_set readfds2;
 
-    int lst_sock = do_socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    int lst_sock = do_socket(AF_INET6, SOCK_STREAM, IPPROTO_TCP);
     int max = lst_sock;
 
     /*

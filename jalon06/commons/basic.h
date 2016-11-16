@@ -39,13 +39,13 @@ void do_write(int sockfd, char* text);
 
 int do_socket(int domain, int type, int protocol);
 
-void init_serv_addr(int port, struct sockaddr_in * serv_addr);
+void init_serv_addr(int port, struct sockaddr_in6 * serv_addr);
 
-void do_bind(int sock, struct sockaddr_in adr);
+void do_bind(int sock, struct sockaddr_in6 adr);
 
 void do_listen(int sock);
 
-int do_accept(int sock, struct sockaddr_in * adr);
+int do_accept(int sock, struct sockaddr_in6 * adr);
 
 void replace_str(char * str, char * origine, char * replacement, char * out);
 

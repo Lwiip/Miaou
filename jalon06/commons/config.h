@@ -2,7 +2,7 @@
 #define CONFIG_H_
 
 #define PORT 3310
-#define ADDRESS 127.0.0.1
+#define ADDRESS [::1]
 #define MAX_CLIENTS 21
 
 #define BUFFER_SIZE 2048
