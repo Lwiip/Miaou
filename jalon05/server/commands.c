@@ -120,14 +120,14 @@ void commande_whois(char * commande,Client * liste_clients, int compteur, char *
 void commande_help(Message * message){
     memset(message->buffer, 0, BUFFER_SIZE);
     snprintf(message->buffer, BUFFER_SIZE, "\nCommandes diponibles :\n"
-    "\t- %s \t\t\t> ajout ou change de pseudo\n"
-    "\t- %s \t\t\t> ferme le chat\n"
+    "\t- %s \t\t> ajout ou change de pseudo\n"
+    "\t- %s \t\t> ferme le chat\n"
     "\t- %s \t\t\t> affiche les utilisateurs en ligne\n"
     "\t- %s [pseudo] \t> affiche les informations relatives au client\n"
-    "\t- %s \t\t\t> envoyer un message a tout le monde\n"
-    "\t- %s [pseudo] \t\t> envoyer un message a un client précis\n"
-    "\t- %s  \t\t\t> Rejoindre un salon de discussion\n"
-    "\t- %s  \t\t\t> Quitter votre salon de discussion\n\n"
+    "\t- %s \t\t> envoyer un message a tout le monde\n"
+    "\t- %s [pseudo] \t> envoyer un message a un client précis\n"
+    "\t- %s  \t\t> Rejoindre un salon de discussion\n"
+    "\t- %s  \t> Quitter votre salon de discussion\n\n"
     "\t- %s [pseudo] \"file/2/send\"\t> Envoyer un fichier a un utilisateur\n\n",
     COMMAND_NICK, COMMAND_QUIT, COMMAND_WHO, COMMAND_WHOIS,  COMMAND_ALL, COMMAND_WHISP, COMMAND_JOIN, COMMAND_QUIT_CHANNEL, COMMAND_SEND);
 

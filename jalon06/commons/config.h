@@ -13,15 +13,14 @@
 static const char SAVE_LOCATION[] = "./download/";
 
 //les commandes du serveur (custom maggle !)
-static const char COMMAND_QUIT[] = 	"/q";
-static const char COMMAND_NICK[] = 	"/n";
+static const char COMMAND_QUIT[] = 	"/quit";
+static const char COMMAND_NICK[] = 	"/nick";
 static const char COMMAND_WHO[] = 	"/who";
 static const char COMMAND_WHOIS[] = "/whois";
-static const char COMMAND_ALL[] = 	"/a";
-static const char COMMAND_WHISP[] = "/w";
+static const char COMMAND_ALL[] = 	"/msgall";
+static const char COMMAND_WHISP[] = "/msg";
 static const char COMMAND_HELP[] = 	"/help";
-static const char COMMAND_QUIT_CHANNEL[]= "/qc";
-static const char COMMAND_JOIN[] = 	"/j";
-static const char COMMAND_SEND[] = 	"/s";
-
+static const char COMMAND_QUIT_CHANNEL[]= "/quitchannel";
+static const char COMMAND_JOIN[] = 	"/join";
+static const char COMMAND_SEND[] = 	"/send";
 #endif /* CONFIG */
