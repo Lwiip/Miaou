@@ -1,2 +1,9 @@
-- Fermer plus proprement les sockets car on a tjr le port qui s'increment :/
-- Reporter les modif faites dans jalon 04 dans jalon 05
+DID
+- client gere bien le crash du serveur
+- serveur gere crash client
+- on envoie bien l'ip du client qui recois le fichier et on triche pas comme certain qui passent par un fichier text (ou ip pre-enregistrée)
+- 
+
+
+TO DO
+fédération de serveur ?
